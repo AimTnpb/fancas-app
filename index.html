@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FANCAS Nursing Daily Care Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai+Looped:wght@300;400;500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fbfaf6;
+    --card: #ffffff;
+    --ink: #1a1a1a;
+    --ink-2: #5c5c5c;
+    --ink-3: #8a8a8a;
+    --line: #e8e6df;
+    --line-2: #d4d2cb;
+    --accent: #0c5d56;
+    --accent-hover: #094842;
+    --accent-light: #e6f1ef;
+    --accent-ring: rgba(12, 93, 86, 0.15);
+    --warn: #b45309;
+    --warn-bg: #fef3c7;
+    --danger: #b91c1c;
+    --danger-bg: #fee2e2;
+    --success: #15803d;
+    --success-bg: #dcfce7;
+    --shadow-sm: 0 1px 2px rgba(20, 20, 20, 0.04);
+    --shadow-md: 0 4px 16px rgba(20, 20, 20, 0.06);
+    --shadow-lg: 0 12px 40px rgba(20, 20, 20, 0.08);
+    --serif: 'IBM Plex Serif', Georgia, serif;
+    --sans: 'IBM Plex Sans Thai Looped', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 10% 0%, rgba(12, 93, 86, 0.025) 0%, transparent 35%),
+      radial-gradient(circle at 90% 100%, rgba(180, 83, 9, 0.02) 0%, transparent 40%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+
+  /* ===== Layout ===== */
+  .shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 32px 24px 120px;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 28px;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--line);
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .title-block h1 {
+    font-family: var(--serif);
+    font-weight: 500;
+    font-size: 32px;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .title-block .sub {
+    color: var(--ink-2);
+    font-size: 14px;
+    margin-top: 6px;
+    letter-spacing: 0.01em;
+  }
+
+  .title-block .eyebrow {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 4px 10px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 10px;
+  }
+
+  /* ===== Settings Bar ===== */
+  .settings {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 20px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .settings-toggle {
+    background: none;
+    border: 1px dashed var(--line-2);
+    color: var(--ink-2);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .settings-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .settings-panel {
+    display: none;
+    width: 100%;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .settings-panel.open {
+    display: flex;
+  }
+
+  .settings-field {
+    flex: 1;
+    min-width: 240px;
+  }
+
+  .settings-field label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+
+  .settings-field input {
+    width: 100%;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 13px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  .settings-field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-ring);
+  }
+
+  /* ===== Patient Info ===== */
+  .patient-info {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin: 20px 0 28px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .info-field label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+
+  .info-field input {
+    width: 100%;
+    padding: 8px 0;
+    font-family: var(--sans);
+    font-size: 15px;
+    border: none;
+    border-bottom: 1px solid var(--line-2);
+    background: transparent;
+    color: var(--ink);
+    transition: border-color 0.15s;
+  }
+
+  .info-field input:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+  }
+
+  /* ===== Tab Navigation ===== */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    flex: 1;
+    min-width: 100px;
+    padding: 12px 14px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .tab .letter {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .tab .name {
+    font-size: 11px;
+    color: inherit;
+    opacity: 0.7;
+    letter-spacing: 0.02em;
+  }
+
+  .tab:hover {
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  .tab.active {
+    background: var(--ink);
+    color: var(--bg);
+  }
+  .tab.active .name { opacity: 0.7; }
+
+  .tab .count {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--accent);
+    color: white;
+    padding: 1px 6px;
+    border-radius: 999px;
+    margin-top: 2px;
+    min-width: 18px;
+    text-align: center;
+    visibility: hidden;
+  }
+
+  .tab .count.has-items { visibility: visible; }
+
+  /* ===== Section ===== */
+  .panel {
+    display: none;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 28px 32px;
+    box-shadow: var(--shadow-md);
+    animation: fadeIn 0.3s ease;
+  }
+  .panel.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .panel-header h2 {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .panel-header .desc {
+    color: var(--ink-2);
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  /* ===== Sub-Section ===== */
+  .subsection {
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .subsection:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .subsection-title {
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--ink);
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .subsection-title .num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+  }
+
+  .subsection-title .required {
+    color: var(--danger);
+    font-size: 12px;
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px;
+  }
+
+  .options.single-col {
+    grid-template-columns: 1fr;
+  }
+
+  /* ===== Checkbox / Radio ===== */
+  .opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--card);
+    font-size: 14px;
+    line-height: 1.4;
+    user-select: none;
+  }
+
+  .opt:hover {
+    border-color: var(--line-2);
+    background: var(--bg);
+  }
+
+  .opt input {
+    margin: 0;
+    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .opt:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    color: var(--accent-hover);
+  }
+
+  .opt .label-text {
+    flex: 1;
+  }
+
+  .opt-text {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px 10px;
+    border: 1px solid var(--line-2);
+    border-radius: 6px;
+    background: var(--card);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--ink);
+    display: none;
+  }
+
+  .opt:has(input:checked) + .opt-text,
+  .opt.with-text:has(input:checked) .opt-text {
+    display: block;
+  }
+
+  /* ===== Free text "Other" ===== */
+  .other-field {
+    margin-top: 10px;
+  }
+
+  .other-field input,
+  .other-field textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    background: var(--bg);
+    font-family: var(--sans);
+    font-size: 13px;
+    color: var(--ink);
+    resize: vertical;
+  }
+
+  .other-field input:focus,
+  .other-field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: var(--card);
+  }
+
+  .other-field label {
+    font-size: 11px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: var(--mono);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* ===== Footer Action Bar ===== */
+  .actionbar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink);
+    color: var(--bg);
+    border-radius: 999px;
+    padding: 8px 8px 8px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 12px 40px rgba(20, 20, 20, 0.18);
+    z-index: 50;
+  }
+
+  .actionbar-stat {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: var(--mono);
+  }
+
+  .actionbar-stat strong {
+    color: var(--bg);
+    font-weight: 600;
+  }
+
+  .submit-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .submit-btn:hover { background: var(--accent-hover); }
+  .submit-btn:disabled {
+    background: var(--ink-3);
+    cursor: not-allowed;
+  }
+
+  .submit-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ===== Modal / Result ===== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    z-index: 100;
+    padding: 40px 20px;
+    overflow-y: auto;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 16px;
+    max-width: 880px;
+    width: 100%;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    margin: auto 0;
+  }
+
+  .modal-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-header h3 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--ink-2);
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-close:hover { background: var(--bg); color: var(--ink); }
+
+  .modal-body {
+    padding: 24px 28px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .result-summary {
+    display: flex;
+    gap: 24px;
+    padding: 16px 20px;
+    background: var(--bg);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .result-stat .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    letter-spacing: 0.08em;
+    font-family: var(--mono);
+    margin-bottom: 4px;
+  }
+
+  .result-stat .value {
+    font-family: var(--serif);
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .result-stat .value.high { color: var(--danger); }
+
+  .result-category {
+    margin-bottom: 20px;
+  }
+
+  .result-category-header {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 12px;
+  }
+
+  .problem-item {
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .problem-item .priority-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+  .priority-dot.high { background: var(--danger); }
+  .priority-dot.medium { background: var(--warn); }
+  .priority-dot.low { background: var(--ink-3); }
+
+  .problem-item .content { flex: 1; }
+  .problem-item .name {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .problem-item .evidence {
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .alert.error {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger);
+  }
+  .alert.warn {
+    background: var(--warn-bg);
+    color: var(--warn);
+    border: 1px solid var(--warn);
+  }
+
+  /* JSON preview */
+  details.json-preview {
+    margin-top: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  details.json-preview summary {
+    padding: 10px 14px;
+    background: var(--bg);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  details.json-preview pre {
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.5;
+    overflow-x: auto;
+    background: #1a1a1a;
+    color: #e8e6df;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Mobile */
+  @media (max-width: 720px) {
+    .shell { padding: 20px 16px 140px; }
+    .title-block h1 { font-size: 26px; }
+    .tab { min-width: 70px; padding: 10px 8px; }
+    .tab .letter { font-size: 16px; }
+    .tab .name { display: none; }
+    .panel { padding: 20px 18px; }
+    .options { grid-template-columns: 1fr; }
+    .actionbar { padding: 6px 6px 6px 16px; gap: 10px; }
+    .submit-btn { padding: 10px 18px; font-size: 13px; }
+    .actionbar-stat { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ===== Header ===== -->
+  <header class="header">
+    <div class="title-block">
+      <span class="eyebrow">Nursing Daily Care Plan · IPD</span>
+      <h1>FANCAS Assessment</h1>
+      <p class="sub">Fluid · Aeration · Nutrition · Communication · Activity · Stimulation</p>
+    </div>
+  </header>
+
+  <!-- ===== Settings (optional override) ===== -->
+  <div class="settings">
+    <button class="settings-toggle" id="settingsToggle">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+    <span style="font-size: 12px; color: var(--ink-3); font-family: var(--mono);">
+      Backend: <span id="endpointStatus" style="color: var(--accent);">/api/dify (secured)</span>
+    </span>
+    <div class="settings-panel" id="settingsPanel">
+      <div class="settings-field" style="min-width: 200px;">
+        <label>User ID (for audit log)</label>
+        <input type="text" id="userId" placeholder="nurse-001" value="nurse-001">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Patient Info ===== -->
+  <div class="patient-info">
+    <div class="info-field">
+      <label>Patient HN</label>
+      <input type="text" id="patientId" placeholder="HN12345">
+    </div>
+    <div class="info-field">
+      <label>Shift Date</label>
+      <input type="date" id="shiftDate">
+    </div>
+    <div class="info-field">
+      <label>Assessment Time</label>
+      <input type="time" id="assessmentTime">
+    </div>
+    <div class="info-field">
+      <label>Nurse (by RN)</label>
+      <input type="text" id="nurseName" placeholder="พยาบาล...">
+    </div>
+  </div>
+
+  <!-- ===== Tabs ===== -->
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-target="panel-f">
+      <span class="letter">F</span>
+      <span class="name">Fluid</span>
+      <span class="count" id="count-f">0</span>
+    </button>
+    <button class="tab" data-target="panel-a1">
+      <span class="letter">A</span>
+      <span class="name">Aeration</span>
+      <span class="count" id="count-a1">0</span>
+    </button>
+    <button class="tab" data-target="panel-n">
+      <span class="letter">N</span>
+      <span class="name">Nutrition</span>
+      <span class="count" id="count-n">0</span>
+    </button>
+    <button class="tab" data-target="panel-c">
+      <span class="letter">C</span>
+      <span class="name">Communication</span>
+      <span class="count" id="count-c">0</span>
+    </button>
+    <button class="tab" data-target="panel-a2">
+      <span class="letter">A</span>
+      <span class="name">Activity</span>
+      <span class="count" id="count-a2">0</span>
+    </button>
+    <button class="tab" data-target="panel-s">
+      <span class="letter">S</span>
+      <span class="name">Stimulation</span>
+      <span class="count" id="count-s">0</span>
+    </button>
+  </nav>
+
+  <!-- ===== F: Fluid and Electrolyte ===== -->
+  <section class="panel active" id="panel-f" data-category="fluid_electrolyte">
+    <div class="panel-header">
+      <h2>Fluid and Electrolyte</h2>
+      <p class="desc">Head/Face · Cardiovascular · Skin · Wound · Urinary · IV · I/O · Infection</p>
+    </div>
+
+    <!-- All F subsections - the engine renders these from a config below -->
+    <div id="f-content"></div>
+  </section>
+
+  <!-- ===== A1: Aeration ===== -->
+  <section class="panel" id="panel-a1" data-category="aeration">
+    <div class="panel-header">
+      <h2>Aeration</h2>
+      <p class="desc">Breathing pattern · Sounds · Cough · Sputum</p>
+    </div>
+    <div id="a1-content"></div>
+  </section>
+
+  <!-- ===== N: Nutrition ===== -->
+  <section class="panel" id="panel-n" data-category="nutrition">
+    <div class="panel-header">
+      <h2>Nutrition</h2>
+      <p class="desc">Intake · Bowel · Digestion · Stool</p>
+    </div>
+    <div id="n-content"></div>
+  </section>
+
+  <!-- ===== C: Communication ===== -->
+  <section class="panel" id="panel-c" data-category="communication">
+    <div class="panel-header">
+      <h2>Communication Ability</h2>
+      <p class="desc">Vision · Hearing · Speech</p>
+    </div>
+    <div id="c-content"></div>
+  </section>
+
+  <!-- ===== A2: Activity and Psychology ===== -->
+  <section class="panel" id="panel-a2" data-category="activity_psychology">
+    <div class="panel-header">
+      <h2>Activities and Psychology</h2>
+      <p class="desc">ADL · Fall risk · Psychological status · Sleep</p>
+    </div>
+    <div id="a2-content"></div>
+  </section>
+
+  <!-- ===== S: Stimulation ===== -->
+  <section class="panel" id="panel-s" data-category="stimulation">
+    <div class="panel-header">
+      <h2>Stimulation</h2>
+      <p class="desc">Consciousness · Motor · Sensory · Pain</p>
+    </div>
+    <div id="s-content"></div>
+  </section>
+
+</div>
+
+<!-- ===== Floating Action Bar ===== -->
+<div class="actionbar">
+  <div class="actionbar-stat">
+    <strong id="totalSelected">0</strong> items selected
+  </div>
+  <button class="submit-btn" id="submitBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12l5 5L20 7"/></svg>
+    <span id="submitText">Generate Problem List</span>
+  </button>
+</div>
+
+<!-- ===== Modal ===== -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Problem List for IPD</h3>
+      <button class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// =================== CONFIG: FANCAS form definition ===================
+// แต่ละ subsection มี: key (json field), title, type (checkbox/radio), options, มี otherText หรือไม่
+
+const FORM_CONFIG = {
+  fluid_electrolyte: [
+    { key: 'head', num: '1.1', title: 'Head', type: 'checkbox',
+      options: ['NSF'], otherText: true },
+    { key: 'lip_mouth', num: '1.2', title: 'Lip and Mouth', type: 'checkbox',
+      options: ['NSF', 'Dry', 'Bleeding per gum'], otherText: true },
+    { key: 'nose', num: '1.3', title: 'Nose', type: 'checkbox',
+      options: ['NSF', 'Congestion', 'Epistaxis'], otherText: true },
+    { key: 'chest_pain', num: '2', title: 'Chest discomfort or Chest pain', type: 'radio',
+      options: ['NSF', 'Yes (see in nurse\'s note)'] },
+    { key: 'pulse', num: '3', title: 'Pulse', type: 'radio',
+      options: ['Regular', 'Irregular (see in nurse\'s note)'] },
+    { key: 'ekg', num: '4', title: 'EKG', type: 'radio',
+      options: ['N/A', 'Normal sinus rhythm', 'Arrhythmia', 'Any medical devices'], hasNote: 'Any medical devices' },
+    { key: 'skin_temperature', num: '5', title: 'Temperature of Skin', type: 'radio',
+      options: ['Hot', 'Warm', 'Cool'] },
+    { key: 'skin_perfusion', num: '6', title: 'Skin perfusion', type: 'checkbox',
+      options: ['NSF', 'Pale', 'Cyanosis'], otherText: true },
+    { key: 'skin_integrity', num: '7', title: 'Skin integrity', type: 'checkbox',
+      options: ['NSF', 'Pressure ulcer', 'IAD Incontinence Associated Dermatitis'], otherText: true },
+    { key: 'braden_score', num: '8', title: 'Braden assessment', type: 'radio',
+      options: [
+        'No Risk (Score 19-23)', 'Low Risk (Score 15-18)',
+        'Moderate Risk (Score 13-14)', 'High Risk (Score 10-12)',
+        'Severe risk (Score 6-9)'
+      ] },
+    { key: 'wound', num: '9', title: 'Wound', type: 'checkbox',
+      options: ['No', 'Suture', 'Abrasion', 'Laceration', 'Swelling', 'Drainage'], otherText: true },
+    { key: 'bleeding', num: '10', title: 'Bleeding', type: 'checkbox',
+      options: ['NSF', 'Bleeding at location'], hasNote: 'Bleeding at location' },
+    { key: 'urinary', num: '11', title: 'Urinary', type: 'checkbox',
+      options: ['NSF', 'Oliguria', 'Polyuria', 'Dysuria'], otherText: true },
+    { key: 'urinary_characteristics', num: '12', title: 'Urinary characteristics', type: 'checkbox',
+      options: ['Clear', 'Turbid', 'Pus', 'Hematuria'], otherText: true },
+    { key: 'iv_management', num: '13', title: 'Intravenous management', type: 'checkbox',
+      options: [
+        'N/A',
+        'Peripheral i.v. site (Lt./Rt.)',
+        'Saline lock site (Lt./Rt.)',
+        'Central line site (Lt./Rt.)'
+      ], otherText: true },
+    { key: 'iv_complication', num: '14', title: 'Infiltration / Phlebitis / Extravasation', type: 'checkbox',
+      options: [
+        'N/A', 'Infiltration / Leakage', 'Phlebitis',
+        'grade 0 = Site appears healthy',
+        'grade 1 = Erythema',
+        'grade 2 = Erythema',
+        'grade 3 = Erythema, pain, palpable venous cord < 1 inch',
+        'grade 4 = Erythema, palpable venous cord > 1 inch',
+        'Extravasation'
+      ] },
+    { key: 'io_balance', num: '15', title: 'Intake / output', type: 'radio',
+      options: ['Balance', 'Positive', 'Negative', 'N/A'] },
+    { key: 'volume_overload_signs', num: '16', title: 'Sign of volume overload', type: 'checkbox',
+      options: ['Dyspnea', 'Pitting edema', 'Frothy sputum'], otherText: true },
+    { key: 'diagnostic_test', num: '17', title: 'Diagnostic Test Results', type: 'checkbox',
+      options: ['N/A', 'NSF', 'Abnormal (See in nurse\'s note)'], otherText: true },
+    { key: 'calf_tenderness', num: '18', title: 'Calf Tenderness', type: 'radio',
+      options: ['NSF', 'Yes (Record in nurse\'s note)'] },
+    { key: 'infection', num: '19', title: 'Infection', type: 'checkbox',
+      options: ['NSF', 'Infection finding'], hasNote: 'Infection finding' },
+    { key: 'infection_precaution', num: '20', title: 'Infection Precaution', type: 'checkbox',
+      options: [
+        'Standard Precaution', 'Contact Precaution', 'Droplet Precaution',
+        'Airborne Precaution', 'Protective Precaution'
+      ] }
+  ],
+
+  aeration: [
+    { key: 'breathing_type', num: '1', title: 'Breathing type', type: 'checkbox',
+      options: [
+        'Room air', 'Oxygen cannula', 'Oxygen mask', 'Oxygen hood',
+        'Oxygen tent', 'On non invasive ventilator',
+        'On ET-tube/TT-Tube with ventilator'
+      ], otherText: true },
+    { key: 'respiratory_rhythm', num: '2', title: 'Respiratory Rhythm', type: 'radio',
+      options: ['Normal', 'Tachypnea', 'Bradypnea'], otherText: true },
+    { key: 'breathing_sounds', num: '3', title: 'Breathing sounds', type: 'checkbox',
+      options: ['NSF', 'Crepitation', 'Rhonchi', 'Wheeze', 'Other (See in nurse\'s note)'] },
+    { key: 'cough', num: '4', title: 'Cough', type: 'radio',
+      options: ['None', 'Effective cough', 'Non-effective cough'] },
+    { key: 'sputum', num: '5', title: 'Sputum', type: 'checkbox',
+      options: ['None', 'Normal (clear or whitish)', 'Abnormal finding (See in nurse\'s note)'] }
+  ],
+
+  nutrition: [
+    { key: 'nutrition_assessment', num: '1', title: 'Nutrition assessment', type: 'checkbox',
+      options: [
+        'NSF', 'NPO', 'Tube feeding', 'Poor appetite',
+        'Swallowing problem', 'Difficulty with chewing'
+      ], otherText: true },
+    { key: 'bowel_sound', num: '2', title: 'Bowel sound', type: 'radio',
+      options: ['NSF', 'Abnormal finding (See in nurse\'s note)'] },
+    { key: 'digestion', num: '3', title: 'Digestion and absorption', type: 'checkbox',
+      options: [
+        'NSF', 'Nausea / Vomiting', 'Abdominal distention',
+        'Remained gastric content', 'Coffee ground'
+      ], otherText: true },
+    { key: 'stool', num: '4', title: 'Stool', type: 'checkbox',
+      options: ['NSF', 'Diarrhea', 'Constipation', 'Melena', 'Fresh bleeding'], otherText: true }
+  ],
+
+  communication: [
+    { key: 'ability', num: '1', title: 'Communication ability assessment', type: 'checkbox',
+      options: [
+        'Able to communicate', 'Unable to communicate',
+        'Vision Deficit', 'Hearing Deficit', 'Speech Deficit'
+      ], otherText: true,
+      noteFor: ['Vision Deficit', 'Hearing Deficit', 'Speech Deficit'] }
+  ],
+
+  activity_psychology: [
+    { key: 'adl', num: '1', title: 'A.D.L. assessment', type: 'radio',
+      options: ['Independent', 'Disability problem needs assistance'] },
+    { key: 'fall_risk', num: '2', title: 'Fall risk', type: 'radio',
+      options: ['Low risk (standard fall precaution)', 'High risk (strictly fall precaution)'] },
+    { key: 'psychological_status', num: '3', title: 'Psychological status', type: 'radio',
+      options: ['Cooperative', 'Uncooperative', 'Unresponsive'] },
+    { key: 'sleep_pattern', num: '4', title: 'Sleep pattern', type: 'checkbox',
+      options: [
+        'NSF/Enough for rest', 'Naps during day time',
+        'Sleep disturbance', 'need sleep Medicine'
+      ] }
+  ],
+
+  stimulation: [
+    { key: 'level_of_conscious', num: '1', title: 'Level of conscious', type: 'radio',
+      options: ['Alert', 'Confused or disoriented', 'Drowsy', 'Comatose', 'Under-sedative'] },
+    { key: 'motor_power', num: '2', title: 'Motor Power', type: 'checkbox',
+      options: [
+        'NSF', 'Fatigue', 'Weakness / Abnormal Limb movement',
+        'Abnormal flexion (decorticate)', 'Abnormal extension (decerebrate)',
+        'No movement'
+      ] },
+    { key: 'sensory', num: '3', title: 'Sensory', type: 'checkbox',
+      options: ['NSF', 'Sensory loss'], otherText: true },
+    { key: 'pain_tool', num: '4', title: 'Pain Assessment tool', type: 'radio',
+      options: [
+        '< 1 year (NIPS)',
+        'FACES / Visual analog (non-verbal cues)',
+        'VNRS (verbal cues)',
+        'CPOT (Critical care pain observation tool)'
+      ], otherText: true },
+    { key: 'pain_score', num: '5', title: 'Pain score', type: 'painScore',
+      options: ['No (pain score = 0)', 'Pain (enter score)'] }
+  ]
+};
+
+const PANEL_MAP = {
+  fluid_electrolyte: 'f-content',
+  aeration: 'a1-content',
+  nutrition: 'n-content',
+  communication: 'c-content',
+  activity_psychology: 'a2-content',
+  stimulation: 's-content'
+};
+
+const COUNT_MAP = {
+  fluid_electrolyte: 'count-f',
+  aeration: 'count-a1',
+  nutrition: 'count-n',
+  communication: 'count-c',
+  activity_psychology: 'count-a2',
+  stimulation: 'count-s'
+};
+
+// =================== RENDER FORM ===================
+function renderSubsection(category, sub) {
+  const groupName = `${category}__${sub.key}`;
+  const inputType = sub.type === 'radio' ? 'radio' : 'checkbox';
+  
+  let optionsHtml = '';
+  
+  if (sub.type === 'painScore') {
+    optionsHtml = `
+      <label class="opt">
+        <input type="radio" name="${groupName}" value="No (pain score = 0)" data-category="${category}" data-key="${sub.key}">
+        <span class="label-text">No pain (score 0)</span>
+      </label>
+      <label class="opt">
+        <input type="radio" name="${groupName}" value="Pain" data-category="${category}" data-key="${sub.key}" id="${groupName}__pain">
+        <span class="label-text">Pain — score:</span>
+      </label>
+      <div class="other-field" style="grid-column: 1 / -1;">
+        <input type="number" min="0" max="10" placeholder="0–10" id="${groupName}__score" data-category="${category}" data-key="pain_score_value">
+      </div>
+    `;
+  } else {
+    optionsHtml = sub.options.map((opt, i) => {
+      const id = `${groupName}__${i}`;
+      const needsNote = (sub.hasNote === opt) || (sub.noteFor && sub.noteFor.includes(opt));
+      return `
+        <label class="opt">
+          <input type="${inputType}" name="${groupName}" value="${opt}"
+                 data-category="${category}" data-key="${sub.key}" id="${id}">
+          <span class="label-text">${opt}</span>
+        </label>
+        ${needsNote ? `
+          <div class="other-field" style="grid-column: 1 / -1; display:none;" id="${id}__note">
+            <label>${opt} — detail</label>
+            <input type="text" data-category="${category}" data-key="${sub.key}__${opt.replace(/[^a-z0-9]/gi,'_').toLowerCase()}_detail">
+          </div>
+        ` : ''}
+      `;
+    }).join('');
+  }
+
+  const otherHtml = sub.otherText ? `
+    <div class="other-field">
+      <label>Other (free text)</label>
+      <input type="text" data-category="${category}" data-key="${sub.key}__other" placeholder="ระบุเพิ่มเติม...">
+    </div>
+  ` : '';
+
+  return `
+    <div class="subsection">
+      <div class="subsection-title">
+        <span class="num">${sub.num}</span>
+        ${sub.title}
+        <span class="required">*</span>
+      </div>
+      <div class="options">${optionsHtml}</div>
+      ${otherHtml}
+    </div>
+  `;
+}
+
+function renderForm() {
+  Object.entries(FORM_CONFIG).forEach(([category, subsections]) => {
+    const container = document.getElementById(PANEL_MAP[category]);
+    container.innerHTML = subsections.map(s => renderSubsection(category, s)).join('');
+  });
+}
+
+// =================== STATE / COLLECT ===================
+function collectAssessment() {
+  const data = {
+    patient_id: document.getElementById('patientId').value || '',
+    shift_date: document.getElementById('shiftDate').value || '',
+    assessment_time: document.getElementById('assessmentTime').value || '',
+    nurse: document.getElementById('nurseName').value || ''
+  };
+  
+  Object.keys(FORM_CONFIG).forEach(cat => { data[cat] = {}; });
+
+  // Collect all checked checkboxes / radios
+  document.querySelectorAll('input[type=checkbox], input[type=radio]').forEach(el => {
+    if (!el.checked) return;
+    const cat = el.dataset.category;
+    const key = el.dataset.key;
+    if (!cat || !key) return;
+    
+    if (el.type === 'radio') {
+      data[cat][key] = el.value;
+    } else {
+      if (!data[cat][key]) data[cat][key] = [];
+      if (Array.isArray(data[cat][key])) data[cat][key].push(el.value);
+    }
+  });
+
+  // Collect detail/other text inputs
+  document.querySelectorAll('input[type=text], input[type=number]').forEach(el => {
+    const cat = el.dataset.category;
+    const key = el.dataset.key;
+    if (!cat || !key || !el.value) return;
+    
+    if (key === 'pain_score_value') {
+      data[cat].pain_score = parseInt(el.value) || 0;
+    } else {
+      data[cat][key] = el.value;
+    }
+  });
+  
+  return data;
+}
+
+function countSelections() {
+  const counts = {};
+  Object.keys(FORM_CONFIG).forEach(cat => { counts[cat] = 0; });
+  
+  document.querySelectorAll('input[type=checkbox]:checked, input[type=radio]:checked').forEach(el => {
+    const cat = el.dataset.category;
+    if (cat && counts[cat] !== undefined) counts[cat]++;
+  });
+  
+  let total = 0;
+  Object.entries(counts).forEach(([cat, n]) => {
+    const el = document.getElementById(COUNT_MAP[cat]);
+    if (el) {
+      el.textContent = n;
+      el.classList.toggle('has-items', n > 0);
+    }
+    total += n;
+  });
+  
+  document.getElementById('totalSelected').textContent = total;
+}
+
+// =================== TABS ===================
+document.getElementById('tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById(tab.dataset.target).classList.add('active');
+});
+
+// =================== SETTINGS ===================
+function loadSettings() {
+  const v = sessionStorage.getItem('userId');
+  if (v) document.getElementById('userId').value = v;
+}
+function saveSettings() {
+  sessionStorage.setItem('userId', document.getElementById('userId').value);
+}
+
+document.getElementById('settingsToggle').addEventListener('click', () => {
+  document.getElementById('settingsPanel').classList.toggle('open');
+});
+document.getElementById('userId').addEventListener('input', saveSettings);
+
+// =================== SUBMIT ===================
+const submitBtn = document.getElementById('submitBtn');
+const submitText = document.getElementById('submitText');
+
+async function handleSubmit() {
+  const userId = document.getElementById('userId').value.trim() || 'nurse-anonymous';
+  const assessment = collectAssessment();
+  
+  submitBtn.disabled = true;
+  submitText.textContent = 'Sending...';
+  submitBtn.querySelector('svg').style.display = 'none';
+  submitBtn.insertAdjacentHTML('afterbegin', '<span class="spinner"></span>');
+  
+  try {
+    // Call our backend proxy — API key is added server-side
+    const res = await fetch('/api/dify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        inputs: { fancas_assessment: assessment },
+        response_mode: 'blocking',
+        user: userId
+      })
+    });
+    
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || result.error || `HTTP ${res.status}`);
+    
+    displayResult(result, assessment);
+  } catch (err) {
+    openModal(`
+      <div class="alert error">
+        <strong>Error:</strong> ${err.message}
+      </div>
+      <details class="json-preview">
+        <summary>Assessment JSON (สิ่งที่ส่งไป)</summary>
+        <pre>${JSON.stringify(assessment, null, 2)}</pre>
+      </details>
+    `);
+  } finally {
+    submitBtn.disabled = false;
+    submitText.textContent = 'Generate Problem List';
+    submitBtn.querySelector('svg').style.display = '';
+    const spinner = submitBtn.querySelector('.spinner');
+    if (spinner) spinner.remove();
+  }
+}
+
+submitBtn.addEventListener('click', handleSubmit);
+
+// =================== DISPLAY RESULT ===================
+function displayResult(apiResult, assessment) {
+  // Dify response format: { data: { outputs: { problem_list, summary } } }
+  const outputs = apiResult?.data?.outputs || {};
+  const problemList = outputs.problem_list || {};
+  const summary = outputs.summary || {};
+  
+  const categoryNames = {
+    fluid_electrolyte: 'Fluid and Electrolyte',
+    aeration: 'Aeration',
+    nutrition: 'Nutrition',
+    communication: 'Communication',
+    activity_psychology: 'Activity and Psychology',
+    stimulation: 'Stimulation'
+  };
+  
+  let html = `
+    <div class="result-summary">
+      <div class="result-stat">
+        <div class="label">Total Problems</div>
+        <div class="value">${summary.total_problems ?? '—'}</div>
+      </div>
+      <div class="result-stat">
+        <div class="label">High Priority</div>
+        <div class="value high">${summary.high_priority_count ?? '—'}</div>
+      </div>
+    </div>
+  `;
+  
+  Object.entries(categoryNames).forEach(([key, name]) => {
+    const items = problemList[key] || [];
+    if (items.length === 0) return;
+    
+    html += `<div class="result-category">
+      <div class="result-category-header">${name} <span style="font-family:var(--mono);font-size:11px;color:var(--ink-3);font-weight:400;">(${items.length})</span></div>`;
+    
+    items.forEach(item => {
+      const pri = item.priority || 'medium';
+      html += `<div class="problem-item">
+        <div class="priority-dot ${pri}"></div>
+        <div class="content">
+          <div class="name">${item.problem || ''}</div>
+          <div class="evidence">${item.evidence || ''}</div>
+        </div>
+      </div>`;
+    });
+    
+    html += `</div>`;
+  });
+  
+  if (Object.keys(problemList).length === 0) {
+    html += `<div class="alert warn">No problem list returned. Raw response below:</div>`;
+  }
+  
+  html += `
+    <details class="json-preview">
+      <summary>Raw API Response</summary>
+      <pre>${JSON.stringify(apiResult, null, 2)}</pre>
+    </details>
+    <details class="json-preview">
+      <summary>Assessment JSON sent</summary>
+      <pre>${JSON.stringify(assessment, null, 2)}</pre>
+    </details>
+  `;
+  
+  openModal(html);
+}
+
+function openModal(html) {
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+document.getElementById('modalClose').addEventListener('click', () => {
+  document.getElementById('modalBackdrop').classList.remove('open');
+});
+document.getElementById('modalBackdrop').addEventListener('click', e => {
+  if (e.target.id === 'modalBackdrop') {
+    document.getElementById('modalBackdrop').classList.remove('open');
+  }
+});
+
+// =================== INIT ===================
+renderForm();
+document.addEventListener('change', countSelections);
+loadSettings();
+
+// Default to today's date
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('shiftDate').value = today;
+const now = new Date().toTimeString().slice(0,5);
+document.getElementById('assessmentTime').value = now;
+</script>
+</body>
+</html>

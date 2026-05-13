@@ -1,0 +1,10 @@
+{
+  "name": "fancas-app",
+  "version": "1.0.0",
+  "description": "FANCAS Nursing Assessment to IPD Problem List — Dify integration",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "private": true
+}
