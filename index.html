@@ -743,18 +743,26 @@
     </div>
   </header>
 
-  <!-- ===== Settings (optional override) ===== -->
+  <!-- ===== Settings (Dify API config) ===== -->
   <div class="settings">
     <button class="settings-toggle" id="settingsToggle">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Settings
+      Dify API Config
     </button>
     <span style="font-size: 12px; color: var(--ink-3); font-family: var(--mono);">
-      Backend: <span id="endpointStatus" style="color: var(--accent);">/api/dify (secured)</span>
+      Endpoint: <span id="endpointStatus">not set</span>
     </span>
     <div class="settings-panel" id="settingsPanel">
-      <div class="settings-field" style="min-width: 200px;">
-        <label>User ID (for audit log)</label>
+      <div class="settings-field">
+        <label>API Endpoint</label>
+        <input type="text" id="apiEndpoint" placeholder="https://api.dify.ai/v1/workflows/run">
+      </div>
+      <div class="settings-field">
+        <label>API Key</label>
+        <input type="password" id="apiKey" placeholder="app-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+      </div>
+      <div class="settings-field" style="min-width: 140px; flex: 0 1 160px;">
+        <label>User ID</label>
         <input type="text" id="userId" placeholder="nurse-001" value="nurse-001">
       </div>
     </div>
@@ -1207,26 +1215,68 @@ document.getElementById('tabs').addEventListener('click', e => {
 });
 
 // =================== SETTINGS ===================
+const SETTINGS_KEYS = ['apiEndpoint', 'apiKey', 'userId'];
 function loadSettings() {
-  const v = sessionStorage.getItem('userId');
-  if (v) document.getElementById('userId').value = v;
+  SETTINGS_KEYS.forEach(k => {
+    const v = sessionStorage.getItem(k);  // session only - safer for API keys
+    if (v) document.getElementById(k).value = v;
+  });
+  updateEndpointStatus();
 }
 function saveSettings() {
-  sessionStorage.setItem('userId', document.getElementById('userId').value);
+  SETTINGS_KEYS.forEach(k => {
+    sessionStorage.setItem(k, document.getElementById(k).value);
+  });
+  updateEndpointStatus();
+}
+function updateEndpointStatus() {
+  const ep = document.getElementById('apiEndpoint').value;
+  const status = document.getElementById('endpointStatus');
+  if (ep) {
+    try {
+      const url = new URL(ep);
+      status.textContent = url.host;
+      status.style.color = 'var(--accent)';
+    } catch { status.textContent = 'invalid URL'; status.style.color = 'var(--danger)'; }
+  } else {
+    status.textContent = 'not set';
+    status.style.color = 'var(--ink-3)';
+  }
 }
 
 document.getElementById('settingsToggle').addEventListener('click', () => {
   document.getElementById('settingsPanel').classList.toggle('open');
 });
-document.getElementById('userId').addEventListener('input', saveSettings);
+SETTINGS_KEYS.forEach(k => {
+  document.getElementById(k).addEventListener('input', saveSettings);
+});
 
 // =================== SUBMIT ===================
 const submitBtn = document.getElementById('submitBtn');
 const submitText = document.getElementById('submitText');
 
 async function handleSubmit() {
+  const endpoint = document.getElementById('apiEndpoint').value.trim();
+  const apiKey = document.getElementById('apiKey').value.trim();
   const userId = document.getElementById('userId').value.trim() || 'nurse-anonymous';
+  
   const assessment = collectAssessment();
+  
+  if (!endpoint || !apiKey) {
+    openModal(`
+      <div class="alert error">
+        <strong>API Config required.</strong> กรุณาตั้งค่า Endpoint และ API Key ก่อน (กดปุ่ม "Dify API Config" ด้านบน)
+      </div>
+      <div class="alert warn">
+        ดูตัวอย่าง JSON ที่จะถูกส่งด้านล่าง — ใช้สำหรับ test ใน Dify playground ได้
+      </div>
+      <details class="json-preview" open>
+        <summary>Assessment JSON</summary>
+        <pre>${JSON.stringify(assessment, null, 2)}</pre>
+      </details>
+    `);
+    return;
+  }
   
   submitBtn.disabled = true;
   submitText.textContent = 'Sending...';
@@ -1234,10 +1284,10 @@ async function handleSubmit() {
   submitBtn.insertAdjacentHTML('afterbegin', '<span class="spinner"></span>');
   
   try {
-    // Call our backend proxy — API key is added server-side
-    const res = await fetch('/api/dify', {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -1248,7 +1298,7 @@ async function handleSubmit() {
     });
     
     const result = await res.json();
-    if (!res.ok) throw new Error(result.message || result.error || `HTTP ${res.status}`);
+    if (!res.ok) throw new Error(result.message || `HTTP ${res.status}`);
     
     displayResult(result, assessment);
   } catch (err) {
@@ -1274,10 +1324,11 @@ submitBtn.addEventListener('click', handleSubmit);
 
 // =================== DISPLAY RESULT ===================
 function displayResult(apiResult, assessment) {
-  // Dify response format: { data: { outputs: { problem_list, summary } } }
+  // Dify response format (v2): { data: { outputs: { problem_list, summary, audit_log } } }
   const outputs = apiResult?.data?.outputs || {};
   const problemList = outputs.problem_list || {};
   const summary = outputs.summary || {};
+  const auditLog = outputs.audit_log || {};
   
   const categoryNames = {
     fluid_electrolyte: 'Fluid and Electrolyte',
@@ -1288,19 +1339,60 @@ function displayResult(apiResult, assessment) {
     stimulation: 'Stimulation'
   };
   
+  const sourceLabels = {
+    rule: { label: 'Rule-based', color: '#0c5d56', bg: '#e6f1ef', icon: '⚙️' },
+    llm_upgrade: { label: 'AI Upgraded', color: '#b45309', bg: '#fef3c7', icon: '⬆️' },
+    llm_added: { label: 'AI Added', color: '#7c3aed', bg: '#ede9fe', icon: '➕' },
+    default: { label: 'Default', color: '#8a8a8a', bg: '#f5f5f5', icon: '•' }
+  };
+  
+  const escapeHtml = s => String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+  
+  // Top summary cards (4 stats now)
   let html = `
     <div class="result-summary">
       <div class="result-stat">
-        <div class="label">Total Problems</div>
+        <div class="label">Total</div>
         <div class="value">${summary.total_problems ?? '—'}</div>
       </div>
       <div class="result-stat">
-        <div class="label">High Priority</div>
+        <div class="label">High</div>
         <div class="value high">${summary.high_priority_count ?? '—'}</div>
+      </div>
+      <div class="result-stat">
+        <div class="label">Medium</div>
+        <div class="value" style="color:var(--warn)">${summary.medium_priority_count ?? '—'}</div>
+      </div>
+      <div class="result-stat">
+        <div class="label">Low</div>
+        <div class="value" style="color:var(--ink-3)">${summary.low_priority_count ?? '—'}</div>
       </div>
     </div>
   `;
   
+  // Patterns detected banner (if any)
+  if (Array.isArray(summary.patterns_detected) && summary.patterns_detected.length > 0) {
+    html += `<div class="alert warn" style="margin-bottom:16px;">
+      <strong>⚠️ Clinical patterns detected:</strong>
+      ${summary.patterns_detected.map(p =>
+        `<span style="display:inline-block;padding:2px 10px;margin:0 4px;background:var(--warn);color:white;border-radius:999px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${escapeHtml(p)}</span>`
+      ).join('')}
+    </div>`;
+  }
+  
+  // Priority source distribution (transparency badge)
+  if (summary.priority_source_distribution) {
+    const src = summary.priority_source_distribution;
+    html += `<div style="display:flex;gap:8px;margin-bottom:20px;font-size:11px;font-family:var(--mono);color:var(--ink-3);">
+      <span>⚙️ Rule: <strong style="color:var(--accent)">${src.rule || 0}</strong></span>
+      <span>⬆️ AI upgrade: <strong style="color:var(--warn)">${src.llm_upgrade || 0}</strong></span>
+      <span>➕ AI added: <strong style="color:#7c3aed">${src.llm_added || 0}</strong></span>
+    </div>`;
+  }
+  
+  // Problem list by category
   Object.entries(categoryNames).forEach(([key, name]) => {
     const items = problemList[key] || [];
     if (items.length === 0) return;
@@ -1310,12 +1402,36 @@ function displayResult(apiResult, assessment) {
     
     items.forEach(item => {
       const pri = item.priority || 'medium';
-      html += `<div class="problem-item">
-        <div class="priority-dot ${pri}"></div>
-        <div class="content">
-          <div class="name">${item.problem || ''}</div>
-          <div class="evidence">${item.evidence || ''}</div>
+      const src = sourceLabels[item.priority_source] || sourceLabels.default;
+      const rationale = item.priority_rationale || '';
+      const criteria = item.criteria_source || '';
+      const baseline = item.priority_baseline;
+      const pattern = item.pattern_detected;
+      
+      html += `<div class="problem-item" style="flex-direction:column;align-items:stretch;gap:10px;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div class="priority-dot ${pri}"></div>
+          <div class="content">
+            <div class="name">
+              ${escapeHtml(item.problem)}
+              <span style="display:inline-block;margin-left:8px;padding:2px 8px;font-size:10px;font-weight:600;color:${src.color};background:${src.bg};border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;font-family:var(--mono);">
+                ${src.icon} ${src.label}
+              </span>
+              ${baseline ? `<span style="font-size:11px;color:var(--ink-3);font-family:var(--mono);margin-left:6px;">(was ${escapeHtml(baseline)})</span>` : ''}
+            </div>
+            <div class="evidence">${escapeHtml(item.evidence)}</div>
+          </div>
         </div>
+        ${rationale || criteria ? `
+          <details style="margin-left:20px;font-size:12px;color:var(--ink-2);background:var(--bg);padding:8px 12px;border-radius:6px;border-left:2px solid ${src.color};">
+            <summary style="cursor:pointer;font-weight:500;color:var(--ink-2);">Why ${escapeHtml(pri)} priority?</summary>
+            <div style="margin-top:6px;line-height:1.5;">
+              ${rationale ? `<div><strong>Rationale:</strong> ${escapeHtml(rationale)}</div>` : ''}
+              ${criteria ? `<div style="margin-top:4px;"><strong>Criteria:</strong> ${escapeHtml(criteria)}</div>` : ''}
+              ${pattern ? `<div style="margin-top:4px;"><strong>Pattern:</strong> ${escapeHtml(pattern)}</div>` : ''}
+            </div>
+          </details>
+        ` : ''}
       </div>`;
     });
     
@@ -1326,14 +1442,57 @@ function displayResult(apiResult, assessment) {
     html += `<div class="alert warn">No problem list returned. Raw response below:</div>`;
   }
   
+  // Audit log section
+  const changes = auditLog.priority_changes || [];
+  const removed = auditLog.removed_from_draft || [];
+  if (changes.length > 0 || removed.length > 0) {
+    html += `
+      <div class="result-category" style="margin-top:24px;">
+        <div class="result-category-header">
+          🔍 Audit Log
+          <span style="font-family:var(--mono);font-size:11px;color:var(--ink-3);font-weight:400;">
+            (${changes.length} change${changes.length !== 1 ? 's' : ''})
+          </span>
+        </div>
+        ${changes.length > 0 ? `
+          <div style="font-size:12px;color:var(--ink-2);margin-bottom:8px;">
+            AI made the following priority decisions, with full justification:
+          </div>
+        ` : ''}
+        ${changes.map(c => {
+          const isUpgrade = c.change_type === 'upgrade';
+          const badge = isUpgrade ? 'UPGRADED' : 'ADDED';
+          const badgeColor = isUpgrade ? 'var(--warn)' : '#7c3aed';
+          return `<div style="padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:var(--card);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <span style="font-size:10px;font-weight:700;padding:2px 8px;background:${badgeColor};color:white;border-radius:4px;font-family:var(--mono);letter-spacing:0.05em;">${badge}</span>
+              <strong>${escapeHtml(c.problem)}</strong>
+              ${isUpgrade ? `<span style="font-family:var(--mono);font-size:11px;color:var(--ink-3);">${escapeHtml(c.from)} → ${escapeHtml(c.to)}</span>` : `<span style="font-family:var(--mono);font-size:11px;color:var(--ink-3);">priority: ${escapeHtml(c.priority)}</span>`}
+            </div>
+            <div style="font-size:12px;color:var(--ink-2);"><strong>Rationale:</strong> ${escapeHtml(c.rationale)}</div>
+            ${c.pattern ? `<div style="font-size:12px;color:var(--ink-2);margin-top:2px;"><strong>Pattern:</strong> ${escapeHtml(c.pattern)}</div>` : ''}
+            ${c.criteria ? `<div style="font-size:12px;color:var(--ink-2);margin-top:2px;"><strong>Criteria:</strong> ${escapeHtml(c.criteria)}</div>` : ''}
+          </div>`;
+        }).join('')}
+        ${removed.length > 0 ? `
+          <div style="font-size:12px;color:var(--ink-2);margin-top:12px;margin-bottom:6px;"><strong>Removed from draft:</strong></div>
+          ${removed.map(r => `<div style="padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:12px;">
+            <strong>${escapeHtml(r.problem)}</strong>: <span style="color:var(--ink-2);">${escapeHtml(r.reason)}</span>
+          </div>`).join('')}
+        ` : ''}
+      </div>
+    `;
+  }
+  
+  // Raw JSON for debugging
   html += `
-    <details class="json-preview">
+    <details class="json-preview" style="margin-top:24px;">
       <summary>Raw API Response</summary>
-      <pre>${JSON.stringify(apiResult, null, 2)}</pre>
+      <pre>${escapeHtml(JSON.stringify(apiResult, null, 2))}</pre>
     </details>
     <details class="json-preview">
       <summary>Assessment JSON sent</summary>
-      <pre>${JSON.stringify(assessment, null, 2)}</pre>
+      <pre>${escapeHtml(JSON.stringify(assessment, null, 2))}</pre>
     </details>
   `;
   
