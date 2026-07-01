@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expert Review · FANCAS-AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  :root {
+    --bg: #fafaf9; --card: #ffffff; --ink: #1c1917; --ink-2: #57534e; --ink-3: #a8a29e;
+    --line: #e7e5e4; --line-2: #d6d3d1;
+    --teal: #0f766e; --teal-dark: #115e59; --teal-bg: #f0fdfa;
+    --amber: #b45309; --amber-bg: #fffbeb; --amber-border: #fcd34d;
+    --red: #b91c1c; --red-bg: #fef2f2; --red-border: #fca5a5;
+    --violet: #7c3aed; --violet-bg: #f5f3ff;
+    --serif: 'IBM Plex Serif', Georgia, serif;
+    --sans: 'IBM Plex Sans', -apple-system, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  input, select, textarea, button { font-family: inherit; font-size: inherit; }
+  .serif { font-family: var(--serif); }
+  .mono { font-family: var(--mono); }
+  #root { min-height: 100vh; }
+  .spin { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fade-in { animation: fade 0.3s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ============================================================================
+// CONFIG — Supabase credentials
+// ============================================================================
+// Option A (recommended for private deployment): hard-code below
+// Option B (leave blank): app prompts for credentials and saves to localStorage
+// ----------------------------------------------------------------------------
+const SUPABASE_CONFIG = {
+  url: 'https://sdmfurrpwuqaqmjmjcxj.supabase.co',   // e.g. 'https://xxxxx.supabase.co'
+  key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkbWZ1cnJwd3VxYXFtam1qY3hqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4NzA2MDIsImV4cCI6MjA5ODQ0NjYwMn0.3g8AHbhWZ4mCqlK6BhWRQKUYfFKMSPUAEc1qpoqtbqM'    // anon public key 'eyJhbGc...'
+};
+
+// ============================================================================
+const CATEGORY_NAMES = {
+  fluid_electrolyte: 'Fluid and Electrolyte',
+  aeration: 'Aeration',
+  nutrition: 'Nutrition',
+  communication: 'Communication',
+  activity_psychology: 'Activity and Psychology',
+  stimulation: 'Stimulation'
+};
+
+const PRIORITY_STYLES = {
+  high:   { dot: '#dc2626', text: '#b91c1c', bg: '#fef2f2', border: '#fca5a5' },
+  medium: { dot: '#f59e0b', text: '#b45309', bg: '#fffbeb', border: '#fcd34d' },
+  low:    { dot: '#a8a29e', text: '#57534e', bg: '#fafaf9', border: '#d6d3d1' }
+};
+
+const ACTION_STYLES = {
+  kept:     { label: 'Unchanged', color: '#57534e', bg: '#f5f5f4', border: '#e7e5e4' },
+  modified: { label: 'Modified',  color: '#b45309', bg: '#fef3c7', border: '#fcd34d' },
+  removed:  { label: 'Removed',   color: '#b91c1c', bg: '#fee2e2', border: '#fca5a5' },
+  added:    { label: 'Added',     color: '#7c3aed', bg: '#ede9fe', border: '#c4b5fd' }
+};
+
+const LS_KEY = 'fancas_review_supabase';
+
+// ============================================================================
+// Supabase REST client
+// ============================================================================
+function makeClient(url, key) {
+  if (!url || !key) return null;
+  const base = url.replace(/\/$/, '');
+  async function req(path, options = {}) {
+    const res = await fetch(`${base}/rest/v1${path}`, {
+      ...options,
+      headers: {
+        'apikey': key, 'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json', ...(options.headers || {})
+      }
+    });
+    if (!res.ok) { const t = await res.text(); throw new Error(`${res.status}: ${t}`); }
+    const ct = res.headers.get('content-type') || '';
+    return ct.includes('json') ? res.json() : res.text();
+  }
+  return {
+    listCases: () => req('/cases?select=*&order=created_at.desc'),
+    getCase: async (id) => (await req(`/cases?id=eq.${encodeURIComponent(id)}&select=*`))[0] || null,
+    getReview: async (cid) => (await req(`/reviews?case_id=eq.${encodeURIComponent(cid)}&select=*`))[0] || null,
+    listReviews: () => req('/reviews?select=*&order=updated_at.desc'),
+    insertCase: (d) => req('/cases', { method: 'POST', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify(d) }),
+    upsertReview: (d) => req('/reviews?on_conflict=case_id', { method: 'POST', headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(d) }),
+    deleteAllCases: () => req('/cases?id=not.is.null', { method: 'DELETE' }),
+    healthCheck: () => req('/cases?select=id&limit=1')
+  };
+}
+
+// ============================================================================
+// Demo data
+// ============================================================================
+const DEMO_CASES = [
+  {
+    hn: 'HN-2026-1042', shift_date: '2026-06-29', assessment_time: '08:00', nurse: 'RN Somchai (demo)',
+    assessment: {
+      fluid_electrolyte: { chest_pain: "Yes (see in nurse's note)", skin_integrity: ['Pressure ulcer'], braden_score: 'High Risk (Score 10-12)', infection: ['Infection finding'] },
+      aeration: { respiratory_rhythm: 'Tachypnea' }, nutrition: {}, communication: {},
+      activity_psychology: { fall_risk: 'High risk (strictly fall precaution)' },
+      stimulation: { level_of_conscious: 'Confused or disoriented', pain_score: 7 }
+    },
+    ai_output: {
+      problem_list: {
+        fluid_electrolyte: [
+          { problem: 'Chest pain', evidence: 'Chest pain reported', priority: 'high', priority_source: 'rule', priority_rationale: 'Possible acute coronary event', criteria_source: 'ACS / cardiac protocol' },
+          { problem: 'Pressure Ulcer', evidence: 'Skin: Pressure ulcer', priority: 'high', priority_source: 'rule', priority_rationale: 'Active pressure ulcer requires wound care', criteria_source: 'Braden Scale' },
+          { problem: 'Infection', evidence: 'Infection finding + tachypnea + confusion', priority: 'high', priority_source: 'llm_upgrade', priority_baseline: 'medium', priority_rationale: 'Sepsis pattern: 2+ qSOFA criteria', pattern_detected: 'sepsis', criteria_source: 'Sepsis-3 criteria' }
+        ],
+        aeration: [ { problem: 'Ineffective breathing pattern', evidence: 'Tachypnea (RR >20)', priority: 'high', priority_source: 'rule', priority_rationale: 'Tachypnea is part of MEWS score', criteria_source: 'MEWS respiratory criteria' } ],
+        nutrition: [], communication: [],
+        activity_psychology: [ { problem: 'High risk for fall', evidence: 'Fall risk high', priority: 'high', priority_source: 'rule', priority_rationale: 'Strict fall precautions required', criteria_source: 'Fall prevention protocol' } ],
+        stimulation: [
+          { problem: 'Confusion', evidence: 'Confused or disoriented', priority: 'medium', priority_source: 'rule', priority_rationale: 'Neurological monitoring', criteria_source: 'Glasgow Coma Scale (GCS)' },
+          { problem: 'Pain', evidence: 'Pain score: 7', priority: 'high', priority_source: 'rule', priority_rationale: 'Pain score 7/10 — severe', criteria_source: 'WHO pain ladder + NRS' }
+        ]
+      },
+      summary: { total_problems: 7, high_priority_count: 6, medium_priority_count: 1, low_priority_count: 0, patterns_detected: ['sepsis'], priority_source_distribution: { rule: 6, llm_upgrade: 1, llm_added: 0 } }
+    }
+  },
+  {
+    hn: 'HN-2026-0987', shift_date: '2026-06-29', assessment_time: '14:30', nurse: 'RN Niran (demo)',
+    assessment: {
+      fluid_electrolyte: { skin_temperature: 'Warm', braden_score: 'Low Risk (Score 15-18)' },
+      aeration: { breathing_type: ['Room air'] }, nutrition: { stool: ['Constipation'] }, communication: {},
+      activity_psychology: { adl: 'Independent', sleep_pattern: ['Sleep disturbance'] },
+      stimulation: { level_of_conscious: 'Alert', pain_score: 3 }
+    },
+    ai_output: {
+      problem_list: {
+        fluid_electrolyte: [ { problem: 'Risk for Pressure Ulcer', evidence: 'Braden: Low Risk', priority: 'low', priority_source: 'rule', priority_rationale: 'Braden low risk', criteria_source: 'Braden Scale' } ],
+        aeration: [], nutrition: [ { problem: 'Constipation', evidence: 'Constipation', priority: 'low', priority_source: 'rule', priority_rationale: 'Bowel routine', criteria_source: 'Bowel management' } ], communication: [],
+        activity_psychology: [ { problem: 'Disturbed Sleep Pattern', evidence: 'Sleep issue', priority: 'low', priority_source: 'rule', priority_rationale: 'Sleep disturbance', criteria_source: 'Sleep hygiene' } ],
+        stimulation: [ { problem: 'Pain', evidence: 'Pain score: 3', priority: 'low', priority_source: 'rule', priority_rationale: 'Mild pain', criteria_source: 'WHO pain ladder + NRS' } ]
+      },
+      summary: { total_problems: 4, high_priority_count: 0, medium_priority_count: 0, low_priority_count: 4, patterns_detected: [], priority_source_distribution: { rule: 4, llm_upgrade: 0, llm_added: 0 } }
+    }
+  }
+];
+
+// ============================================================================
+// Icons (inline SVG)
+// ============================================================================
+const Icon = ({ path, size = 16, style = {} }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}>
+    {path}
+  </svg>
+);
+const IconChevronR = (p) => <Icon {...p} path={<polyline points="9 18 15 12 9 6" />} />;
+const IconChevronD = (p) => <Icon {...p} path={<polyline points="6 9 12 15 18 9" />} />;
+const IconBack = (p) => <Icon {...p} path={<><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></>} />;
+const IconTrash = (p) => <Icon {...p} path={<><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>} />;
+const IconPlus = (p) => <Icon {...p} path={<><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></>} />;
+const IconSave = (p) => <Icon {...p} path={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></>} />;
+const IconRefresh = (p) => <Icon {...p} path={<><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" /></>} />;
+const IconDownload = (p) => <Icon {...p} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>} />;
+const IconMsg = (p) => <Icon {...p} path={<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />} />;
+const IconDB = (p) => <Icon {...p} path={<><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></>} />;
+const IconSettings = (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>} />;
+
+// ============================================================================
+// Main App
+// ============================================================================
+function App() {
+  const [view, setView] = useState('list');
+  const [selectedCaseId, setSelectedCaseId] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [client, setClient] = useState(null);
+  const [settings, setSettings] = useState({ url: '', key: '' });
+  const [conn, setConn] = useState('unknown');
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const showToast = (message, type = 'info') => { setToast({ message, type }); setTimeout(() => setToast(null), 3500); };
+
+  // Load config: hard-coded first, then localStorage
+  useEffect(() => {
+    let url = SUPABASE_CONFIG.url, key = SUPABASE_CONFIG.key;
+    if (!url || !key) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        url = url || saved.url || ''; key = key || saved.key || '';
+      } catch {}
+    }
+    if (url && key) {
+      setSettings({ url, key });
+      setClient(makeClient(url, key));
+    } else {
+      setConn('needs_setup'); setLoading(false); setShowSettings(true);
+    }
+  }, []);
+
+  const fetchCases = useCallback(async (silent = false) => {
+    if (!client) return;
+    if (!silent) setRefreshing(true);
+    try {
+      const data = await client.listCases();
+      setCases(data || []); setConn('connected');
+    } catch (err) {
+      setConn('error');
+      if (!silent) showToast(`Connection error: ${err.message}`, 'error');
+    } finally { if (!silent) setRefreshing(false); setLoading(false); }
+  }, [client]);
+
+  useEffect(() => { if (client) fetchCases(); }, [client, fetchCases]);
+
+  useEffect(() => {
+    if (!client || view === 'detail') return;
+    const iv = setInterval(() => { if (document.visibilityState === 'visible') fetchCases(true); }, 10000);
+    return () => clearInterval(iv);
+  }, [client, view, fetchCases]);
+
+  const applySettings = async (url, key) => {
+    const c = makeClient(url, key);
+    if (!c) { showToast('Enter both URL and key', 'error'); return; }
+    try { await c.healthCheck(); }
+    catch (err) { showToast(`Test failed: ${err.message}`, 'error'); return; }
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ url, key })); } catch {}
+    setSettings({ url, key }); setClient(c); setShowSettings(false);
+    showToast('Connected to Supabase', 'success');
+  };
+
+  const openCase = (id) => { setSelectedCaseId(id); setView('detail'); };
+  const backToList = () => { setSelectedCaseId(null); setView('list'); fetchCases(); };
+
+  return (
+    <div>
+      <header style={{ borderBottom: '1px solid var(--line)', background: 'var(--card)' }}>
+        <div style={{ maxWidth: 1120, margin: '0 auto', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--teal-dark)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon size={18} path={<><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></>} />
+            </div>
+            <div>
+              <h1 className="serif" style={{ fontSize: 20, fontWeight: 500, letterSpacing: '-0.01em' }}>Expert Review</h1>
+              <p className="mono" style={{ fontSize: 11, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>FANCAS-AI · Validation Console</p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ConnBadge state={conn} />
+            {view !== 'detail' && client && (
+              <nav style={{ display: 'flex', gap: 4, background: 'var(--bg)', padding: 4, borderRadius: 8 }}>
+                <TabBtn active={view === 'list'} onClick={() => setView('list')}>Cases <span className="mono" style={{ fontSize: 11, color: 'var(--ink-3)' }}>({cases.length})</span></TabBtn>
+                <TabBtn active={view === 'stats'} onClick={() => setView('stats')}>Statistics</TabBtn>
+              </nav>
+            )}
+            <button onClick={() => setShowSettings(true)} style={{ padding: 8, background: 'none', border: 'none', color: 'var(--ink-3)', cursor: 'pointer', borderRadius: 8, display: 'flex' }} title="Settings"><IconSettings size={16} /></button>
+          </div>
+        </div>
+      </header>
+
+      {toast && (
+        <div className="fade-in" style={{ position: 'fixed', top: 76, right: 24, zIndex: 100, background: toast.type === 'error' ? 'var(--red)' : '#1c1917', color: 'white', padding: '10px 16px', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', fontSize: 14, maxWidth: 400 }}>
+          {toast.message}
+        </div>
+      )}
+
+      {showSettings && <SettingsDialog initialUrl={settings.url} initialKey={settings.key} onApply={applySettings} onClose={() => setShowSettings(false)} canClose={!!client} />}
+
+      <main style={{ maxWidth: 1120, margin: '0 auto', padding: '32px 24px' }}>
+        {loading ? <div style={{ textAlign: 'center', padding: 64, color: 'var(--ink-3)' }}>Loading…</div>
+          : !client ? <SetupWelcome onOpen={() => setShowSettings(true)} />
+          : conn === 'error' ? <ConnError onRetry={() => fetchCases()} onSettings={() => setShowSettings(true)} />
+          : view === 'list' ? <CasesList cases={cases} client={client} refreshing={refreshing} onOpen={openCase} onRefresh={() => fetchCases()} showToast={showToast} />
+          : view === 'detail' && selectedCaseId ? <CaseDetail caseId={selectedCaseId} client={client} onBack={backToList} showToast={showToast} />
+          : view === 'stats' ? <StatsView cases={cases} client={client} showToast={showToast} />
+          : null}
+      </main>
+    </div>
+  );
+}
+
+function TabBtn({ active, onClick, children }) {
+  return <button onClick={onClick} style={{ padding: '6px 16px', borderRadius: 6, border: 'none', background: active ? 'var(--card)' : 'transparent', color: active ? 'var(--ink)' : 'var(--ink-2)', fontWeight: 500, cursor: 'pointer', boxShadow: active ? '0 1px 2px rgba(0,0,0,0.05)' : 'none', display: 'flex', alignItems: 'center', gap: 6 }}>{children}</button>;
+}
+
+function ConnBadge({ state }) {
+  const map = {
+    connected: { t: 'live', c: 'var(--teal)', bg: 'var(--teal-bg)' },
+    error: { t: 'offline', c: 'var(--red)', bg: 'var(--red-bg)' },
+    needs_setup: { t: 'setup needed', c: 'var(--amber)', bg: 'var(--amber-bg)' }
+  };
+  const s = map[state]; if (!s) return null;
+  return <span className="mono" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 999, fontSize: 11, color: s.c, background: s.bg }}><span style={{ width: 6, height: 6, borderRadius: 999, background: s.c }}></span>{s.t}</span>;
+}
+
+// ============================================================================
+// Settings Dialog
+// ============================================================================
+function SettingsDialog({ initialUrl, initialKey, onApply, onClose, canClose }) {
+  const [url, setUrl] = useState(initialUrl || '');
+  const [key, setKey] = useState(initialKey || '');
+  const [testing, setTesting] = useState(false);
+  const apply = async () => { setTesting(true); await onApply(url.trim(), key.trim()); setTesting(false); };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90, background: 'rgba(28,25,23,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ background: 'var(--card)', borderRadius: 12, maxWidth: 560, width: '100%', boxShadow: '0 20px 50px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 className="serif" style={{ fontSize: 18, fontWeight: 500 }}>Supabase connection</h3>
+          {canClose && <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--ink-3)', cursor: 'pointer', fontSize: 22 }}>&times;</button>}
+        </div>
+        <div style={{ padding: 24 }}>
+          <p style={{ fontSize: 14, color: 'var(--ink-2)', marginBottom: 16 }}>Find these in Supabase: <span className="mono">Settings → API</span>, or the green <strong>Connect</strong> button.</p>
+          <label className="mono" style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Project URL</label>
+          <input value={url} onChange={e => setUrl(e.target.value)} placeholder="https://xxxxx.supabase.co" className="mono" style={inputStyle} />
+          <label className="mono" style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-3)', fontWeight: 600, margin: '16px 0 6px' }}>Anon (public) key</label>
+          <input type="password" value={key} onChange={e => setKey(e.target.value)} placeholder="eyJhbGc..." className="mono" style={inputStyle} />
+          <p style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 6 }}>Use the <strong>anon public</strong> key, not service_role.</p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+            {canClose && <button onClick={onClose} style={{ padding: '8px 16px', background: 'none', border: 'none', color: 'var(--ink-2)', fontWeight: 500, cursor: 'pointer' }}>Cancel</button>}
+            <button onClick={apply} disabled={testing || !url.trim() || !key.trim()} style={{ padding: '8px 16px', background: testing || !url.trim() || !key.trim() ? 'var(--ink-3)' : 'var(--teal-dark)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {testing && <IconRefresh size={14} className="spin" />}{testing ? 'Testing…' : 'Connect'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+const inputStyle = { width: '100%', border: '1px solid var(--line-2)', borderRadius: 8, padding: '8px 12px', fontSize: 13, outline: 'none' };
+
+function SetupWelcome({ onOpen }) {
+  return (
+    <div style={{ border: '2px dashed var(--line)', borderRadius: 12, padding: '64px 24px', textAlign: 'center' }}>
+      <div style={{ color: 'var(--ink-3)', marginBottom: 12, display: 'flex', justifyContent: 'center' }}><IconDB size={36} /></div>
+      <h3 className="serif" style={{ fontSize: 20, fontWeight: 500, marginBottom: 8 }}>Connect to Supabase</h3>
+      <p style={{ fontSize: 14, color: 'var(--ink-2)', marginBottom: 20, maxWidth: 420, margin: '0 auto 20px' }}>Add your Supabase URL and anon key to start reviewing cases.</p>
+      <button onClick={onOpen} style={{ padding: '8px 16px', background: 'var(--teal-dark)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconSettings size={14} /> Open settings</button>
+    </div>
+  );
+}
+
+function ConnError({ onRetry, onSettings }) {
+  return (
+    <div style={{ border: '1px solid var(--red-border)', background: 'var(--red-bg)', borderRadius: 12, padding: '48px 24px', textAlign: 'center' }}>
+      <h3 className="serif" style={{ fontSize: 18, fontWeight: 500, marginBottom: 4, color: '#7f1d1d' }}>Can't reach Supabase</h3>
+      <p style={{ fontSize: 14, color: 'var(--red)', marginBottom: 16 }}>Check your URL, key, and network.</p>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <button onClick={onRetry} style={{ padding: '8px 16px', background: 'var(--red)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}><IconRefresh size={14} /> Retry</button>
+        <button onClick={onSettings} style={{ padding: '8px 16px', background: 'var(--card)', border: '1px solid var(--red-border)', color: 'var(--red)', borderRadius: 8, fontWeight: 500, cursor: 'pointer' }}>Settings</button>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Cases List
+// ============================================================================
+function CasesList({ cases, client, refreshing, onOpen, onRefresh, showToast }) {
+  const addDemo = async () => {
+    try { for (const c of DEMO_CASES) await client.insertCase(c); showToast(`Added ${DEMO_CASES.length} demo cases`, 'success'); onRefresh(); }
+    catch (err) { showToast(`Failed: ${err.message}`, 'error'); }
+  };
+  const clearAll = async () => {
+    if (!confirm('Delete all cases and reviews? Cannot be undone.')) return;
+    try { await client.deleteAllCases(); showToast('Cleared', 'success'); onRefresh(); }
+    catch (err) { showToast(`Failed: ${err.message}`, 'error'); }
+  };
+  const pending = cases.filter(c => c.review_status === 'pending').length;
+  const reviewed = cases.filter(c => c.review_status === 'reviewed').length;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 24, flexWrap: 'wrap', gap: 8 }}>
+        <div>
+          <h2 className="serif" style={{ fontSize: 24, fontWeight: 500, marginBottom: 4 }}>Cases for review</h2>
+          <p style={{ fontSize: 14, color: 'var(--ink-2)' }}>Auto-refreshing every 10s · New cases appear automatically</p>
+        </div>
+        <button onClick={onRefresh} disabled={refreshing} style={{ fontSize: 14, color: 'var(--ink-2)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px' }}>
+          <IconRefresh size={13} className={refreshing ? 'spin' : ''} />{refreshing ? 'Refreshing' : 'Refresh now'}
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
+        <StatCard label="Total cases" value={cases.length} />
+        <StatCard label="Pending review" value={pending} accent="amber" />
+        <StatCard label="Reviewed" value={reviewed} accent="teal" />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+        <button onClick={addDemo} style={{ padding: '8px 16px', border: '1px solid var(--line-2)', background: 'var(--card)', color: 'var(--ink-2)', borderRadius: 8, fontWeight: 500, cursor: 'pointer' }}>Add demo cases</button>
+        {cases.length > 0 && <button onClick={clearAll} style={{ marginLeft: 'auto', padding: '8px 16px', color: 'var(--ink-3)', background: 'none', border: 'none', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}><IconTrash size={14} /> Clear all</button>}
+      </div>
+
+      {cases.length === 0 ? (
+        <div style={{ border: '2px dashed var(--line)', borderRadius: 12, padding: '64px 24px', textAlign: 'center' }}>
+          <div style={{ color: 'var(--ink-3)', marginBottom: 12, display: 'flex', justifyContent: 'center' }}><IconDB size={36} /></div>
+          <h3 className="serif" style={{ fontSize: 18, fontWeight: 500, marginBottom: 4 }}>No cases yet</h3>
+          <p style={{ fontSize: 14, color: 'var(--ink-2)', marginBottom: 20 }}>Cases appear automatically when nurses submit assessments.</p>
+          <button onClick={addDemo} style={{ padding: '8px 16px', background: 'var(--teal-dark)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 500, cursor: 'pointer' }}>Add demo cases</button>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {cases.map(c => <CaseRow key={c.id} c={c} onOpen={() => onOpen(c.id)} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ label, value, accent }) {
+  const colors = { teal: 'var(--teal)', amber: 'var(--amber)', default: 'var(--ink)' };
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 8, padding: '12px 16px' }}>
+      <p className="mono" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-3)', marginBottom: 4 }}>{label}</p>
+      <p className="serif" style={{ fontSize: 24, fontWeight: 500, color: colors[accent] || colors.default }}>{value}</p>
+    </div>
+  );
+}
+
+function CaseRow({ c, onOpen }) {
+  const reviewed = c.review_status === 'reviewed';
+  const total = c.ai_output?.summary?.total_problems || 0;
+  const patterns = c.ai_output?.summary?.patterns_detected || [];
+  return (
+    <button onClick={onOpen} style={{ width: '100%', background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 8, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer', textAlign: 'left' }}>
+      <span style={{ width: 8, height: 8, borderRadius: 999, background: reviewed ? 'var(--teal)' : 'var(--amber)', flexShrink: 0 }}></span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4, flexWrap: 'wrap' }}>
+          <span className="mono" style={{ fontWeight: 500, fontSize: 14 }}>{c.hn}</span>
+          <span style={{ color: 'var(--ink-3)', fontSize: 12 }}>·</span>
+          <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>{c.nurse || 'unknown'}</span>
+          {patterns.map(p => <span key={p} className="mono" style={{ fontSize: 11, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '2px 8px', borderRadius: 999, textTransform: 'uppercase', fontWeight: 600 }}>{p}</span>)}
+        </div>
+        <p className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>{c.shift_date} · {new Date(c.created_at).toLocaleString()} · {total} problems</p>
+      </div>
+      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 500, background: reviewed ? 'var(--teal-bg)' : 'var(--amber-bg)', color: reviewed ? 'var(--teal)' : 'var(--amber)' }}>{reviewed ? 'Reviewed' : 'Pending'}</span>
+      <span style={{ color: 'var(--ink-3)', display: 'flex' }}><IconChevronR size={16} /></span>
+    </button>
+  );
+}
+
+// ============================================================================
+// Case Detail
+// ============================================================================
+function CaseDetail({ caseId, client, onBack, showToast }) {
+  const [caseData, setCaseData] = useState(null);
+  const [rev, setRev] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [reviewer, setReviewer] = useState('');
+  const [overall, setOverall] = useState('');
+  const [showAssess, setShowAssess] = useState(false);
+  const [expanded, setExpanded] = useState(new Set(['fluid_electrolyte']));
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const c = await client.getCase(caseId);
+        if (!c) { setLoading(false); return; }
+        setCaseData(c);
+        const ex = await client.getReview(caseId);
+        if (ex) { setRev(ex.problems_by_category); setReviewer(ex.reviewer_name || ''); setOverall(ex.overall_comment || ''); }
+        else {
+          const init = {};
+          for (const cat of Object.keys(CATEGORY_NAMES)) {
+            const aps = c.ai_output?.problem_list?.[cat] || [];
+            init[cat] = aps.map((p, i) => ({ _id: `orig_${cat}_${i}`, _action: 'kept', _original: { ...p }, _comment: '', ...p }));
+          }
+          setRev(init);
+        }
+      } catch (err) { showToast(`Failed: ${err.message}`, 'error'); }
+      finally { setLoading(false); }
+    })();
+  }, [caseId, client]);
+
+  const toggle = (cat) => setExpanded(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
+
+  const upd = (cat, id, field, val) => setRev(prev => ({ ...prev, [cat]: prev[cat].map(p => {
+    if (p._id !== id) return p;
+    const u = { ...p, [field]: val };
+    if (p._action === 'kept' && p._original && p._original[field] !== val) u._action = 'modified';
+    return u;
+  }) }));
+  const cmt = (cat, id, c) => setRev(prev => ({ ...prev, [cat]: prev[cat].map(p => p._id === id ? { ...p, _comment: c } : p) }));
+  const rm = (cat, id) => setRev(prev => ({ ...prev, [cat]: prev[cat].map(p => p._id === id ? { ...p, _action: p._action === 'added' ? null : 'removed' } : p).filter(p => p._action !== null) }));
+  const restore = (cat, id) => setRev(prev => ({ ...prev, [cat]: prev[cat].map(p => (p._id === id && p._original) ? { ...p._original, _id: p._id, _action: 'kept', _original: p._original, _comment: p._comment || '' } : p) }));
+  const add = (cat) => { setRev(prev => ({ ...prev, [cat]: [...(prev[cat] || []), { _id: `new_${cat}_${Date.now()}`, _action: 'added', _comment: '', problem: '', evidence: '', priority: 'medium', priority_source: 'expert_added', priority_rationale: '', criteria_source: '' }] })); setExpanded(prev => new Set(prev).add(cat)); };
+
+  const metrics = () => {
+    const m = { total_ai: 0, kept: 0, modified: 0, removed: 0, added: 0, total_final: 0 };
+    for (const cat of Object.keys(CATEGORY_NAMES)) for (const p of (rev?.[cat] || [])) {
+      if (p._action === 'added') m.added++; else m.total_ai++;
+      if (p._action === 'kept') m.kept++; else if (p._action === 'modified') m.modified++; else if (p._action === 'removed') m.removed++;
+      if (p._action !== 'removed') m.total_final++;
+    }
+    m.agreement_rate = m.total_ai > 0 ? m.kept / m.total_ai : 1;
+    return m;
+  };
+
+  const buildChanges = () => {
+    const ch = {};
+    for (const cat of Object.keys(CATEGORY_NAMES)) {
+      ch[cat] = [];
+      for (const p of (rev?.[cat] || [])) {
+        if (p._action === 'kept' && !p._comment) continue;
+        const e = { action: p._action, problem_name: p.problem, expert_comment: p._comment || '' };
+        if (p._action === 'added') e.problem_data = { problem: p.problem, evidence: p.evidence, priority: p.priority, priority_rationale: p.priority_rationale, criteria_source: p.criteria_source };
+        else if (p._action === 'removed') e.original_data = p._original;
+        else if (p._action === 'modified') {
+          e.changes = {};
+          for (const f of ['problem', 'evidence', 'priority', 'priority_rationale', 'criteria_source'])
+            if (p._original?.[f] !== p[f]) e.changes[f] = { from: p._original?.[f] || '', to: p[f] };
+        }
+        ch[cat].push(e);
+      }
+    }
+    return ch;
+  };
+
+  const save = async () => {
+    if (!reviewer.trim()) { showToast('Enter your name as reviewer', 'error'); return; }
+    setSaving(true);
+    try {
+      await client.upsertReview({ case_id: caseId, reviewer_name: reviewer.trim(), overall_comment: overall, problems_by_category: rev, overrides_by_category: buildChanges(), metrics: metrics() });
+      showToast('Review saved', 'success'); setTimeout(onBack, 800);
+    } catch (err) { showToast(`Save failed: ${err.message}`, 'error'); }
+    finally { setSaving(false); }
+  };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 64, color: 'var(--ink-3)' }}>Loading…</div>;
+  if (!caseData) return <div style={{ textAlign: 'center', padding: 64, color: 'var(--ink-3)' }}>Case not found</div>;
+  const m = metrics();
+
+  return (
+    <div>
+      <button onClick={onBack} style={{ fontSize: 14, color: 'var(--ink-2)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}><IconBack size={14} /> Back to cases</button>
+
+      <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div>
+            <h2 className="serif" style={{ fontSize: 24, fontWeight: 500, marginBottom: 4 }}>{caseData.hn}</h2>
+            <p style={{ fontSize: 14, color: 'var(--ink-2)' }}>{caseData.shift_date} · {caseData.nurse || 'unknown'} · {new Date(caseData.created_at).toLocaleString()}</p>
+          </div>
+          <div className="mono" style={{ display: 'flex', gap: 16, fontSize: 14, flexWrap: 'wrap' }}>
+            <span><span style={{ color: 'var(--ink-3)' }}>AI:</span> <strong>{m.total_ai}</strong></span>
+            <span><span style={{ color: 'var(--ink-3)' }}>Final:</span> <strong>{m.total_final}</strong></span>
+            <span style={{ color: 'var(--amber)' }}><span style={{ color: 'var(--ink-3)' }}>Mod:</span> <strong>{m.modified}</strong></span>
+            <span style={{ color: 'var(--red)' }}><span style={{ color: 'var(--ink-3)' }}>Rem:</span> <strong>{m.removed}</strong></span>
+            <span style={{ color: 'var(--violet)' }}><span style={{ color: 'var(--ink-3)' }}>Add:</span> <strong>{m.added}</strong></span>
+          </div>
+        </div>
+        {caseData.ai_output?.summary?.patterns_detected?.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, flexWrap: 'wrap', marginTop: 12 }}>
+            <span style={{ color: 'var(--ink-2)' }}>AI detected:</span>
+            {caseData.ai_output.summary.patterns_detected.map(p => <span key={p} className="mono" style={{ padding: '4px 10px', background: 'var(--amber-bg)', color: 'var(--amber)', borderRadius: 999, fontSize: 12, fontWeight: 600, textTransform: 'uppercase' }}>{p}</span>)}
+          </div>
+        )}
+      </div>
+
+      <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, marginBottom: 24, overflow: 'hidden' }}>
+        <button onClick={() => setShowAssess(!showAssess)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'none', border: 'none', cursor: 'pointer' }}>
+          <span style={{ fontWeight: 500, fontSize: 14, display: 'flex', alignItems: 'center', gap: 8 }}>{showAssess ? <IconChevronD size={16} /> : <IconChevronR size={16} />} Original assessment</span>
+          <span className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>readonly</span>
+        </button>
+        {showAssess && <div style={{ padding: '0 20px 20px', borderTop: '1px solid var(--line)', paddingTop: 16 }}><pre className="mono" style={{ fontSize: 12, background: 'var(--bg)', padding: 12, borderRadius: 8, overflowX: 'auto', maxHeight: 320 }}>{JSON.stringify(caseData.assessment, null, 2)}</pre></div>}
+      </div>
+
+      <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+        <label className="mono" style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Reviewer name *</label>
+        <input value={reviewer} onChange={e => setReviewer(e.target.value)} placeholder="e.g. Dr. Sarawut, RN MNS" style={{ ...inputStyle, fontSize: 14 }} />
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+        {Object.entries(CATEGORY_NAMES).map(([cat, name]) => {
+          const items = rev?.[cat] || [];
+          const exp = expanded.has(cat);
+          const vis = items.filter(i => i._action !== 'removed').length;
+          const changed = items.some(i => i._action !== 'kept' || i._comment);
+          return (
+            <div key={cat} style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
+              <button onClick={() => toggle(cat)} style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: 'none', border: 'none', cursor: 'pointer' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  {exp ? <IconChevronD size={16} /> : <IconChevronR size={16} />}
+                  <span className="serif" style={{ fontSize: 16, fontWeight: 500 }}>{name}</span>
+                  <span className="mono" style={{ fontSize: 12, color: 'var(--ink-3)' }}>({vis})</span>
+                </span>
+                {changed && <span style={{ fontSize: 12, color: 'var(--amber)', background: 'var(--amber-bg)', padding: '2px 8px', borderRadius: 999, fontWeight: 500 }}>modified</span>}
+              </button>
+              {exp && (
+                <div style={{ padding: '16px 20px 20px', borderTop: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {items.length === 0 && <p style={{ fontSize: 14, color: 'var(--ink-3)', fontStyle: 'italic' }}>No problems in this category.</p>}
+                  {items.map(item => <ProblemCard key={item._id} item={item} onUpd={(f, v) => upd(cat, item._id, f, v)} onCmt={(c) => cmt(cat, item._id, c)} onRm={() => rm(cat, item._id)} onRestore={() => restore(cat, item._id)} />)}
+                  <button onClick={() => add(cat)} style={{ width: '100%', border: '2px dashed var(--line)', background: 'none', borderRadius: 8, padding: '10px', fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><IconPlus size={14} /> Add problem to this category</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: 20, marginBottom: 24 }}>
+        <label className="mono" style={{ display: 'block', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 8 }}>Overall comments</label>
+        <textarea value={overall} onChange={e => setOverall(e.target.value)} placeholder="General observations, suggestions for improving rules or LLM prompt, edge cases…" rows={4} style={{ ...inputStyle, fontSize: 14, resize: 'vertical' }} />
+      </div>
+
+      <div style={{ position: 'sticky', bottom: 16, background: '#1c1917', color: 'white', borderRadius: 999, padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+        <div style={{ fontSize: 14, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <span className="mono" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-3)' }}>Agreement</span>
+          <span className="serif" style={{ fontSize: 18 }}>{Math.round(m.agreement_rate * 100)}%</span>
+        </div>
+        <button onClick={save} disabled={saving} style={{ padding: '8px 20px', background: saving ? '#57534e' : 'var(--teal)', color: 'white', border: 'none', borderRadius: 999, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {saving ? <IconRefresh size={14} className="spin" /> : <IconSave size={14} />}{saving ? 'Saving' : 'Save review'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ProblemCard({ item, onUpd, onCmt, onRm, onRestore }) {
+  const [details, setDetails] = useState(item._action === 'added');
+  const action = item._action, isRemoved = action === 'removed';
+  const as = ACTION_STYLES[action] || ACTION_STYLES.kept;
+  const ps = PRIORITY_STYLES[item.priority] || PRIORITY_STYLES.medium;
+  const modBorder = (f) => item._original?.[f] !== item[f] && action !== 'added' ? 'var(--amber-border)' : 'transparent';
+
+  return (
+    <div style={{ border: `1px solid ${as.border}`, background: isRemoved ? '#fef2f280' : 'var(--card)', borderRadius: 8, padding: 16, opacity: isRemoved ? 0.6 : 1 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <span style={{ width: 8, height: 8, borderRadius: 999, background: ps.dot, marginTop: 8, flexShrink: 0 }}></span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+            <input value={item.problem || ''} onChange={e => onUpd('problem', e.target.value)} disabled={isRemoved} placeholder={action === 'added' ? 'Problem name…' : ''} style={{ flex: 1, minWidth: 0, fontWeight: 500, fontSize: 16, background: 'transparent', border: 'none', borderBottom: `1px solid ${modBorder('problem')}`, outline: 'none', padding: '2px 4px' }} />
+            <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: as.color, background: as.bg }}>{as.label}</span>
+          </div>
+          <input value={item.evidence || ''} onChange={e => onUpd('evidence', e.target.value)} disabled={isRemoved} placeholder="Evidence from assessment…" style={{ width: '100%', fontSize: 14, color: 'var(--ink-2)', background: 'transparent', border: 'none', borderBottom: `1px solid ${modBorder('evidence')}`, outline: 'none', padding: '2px 4px' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <label className="mono" style={{ fontSize: 11, color: 'var(--ink-3)', textTransform: 'uppercase' }}>Priority</label>
+              <select value={item.priority || 'medium'} onChange={e => onUpd('priority', e.target.value)} disabled={isRemoved} style={{ fontSize: 14, padding: '4px 8px', border: `1px solid ${ps.border}`, background: ps.bg, color: ps.text, fontWeight: 500, borderRadius: 6, cursor: 'pointer' }}>
+                <option value="high">high</option><option value="medium">medium</option><option value="low">low</option>
+              </select>
+              {item._original?.priority && item._original.priority !== item.priority && action !== 'added' && <span className="mono" style={{ fontSize: 11, color: 'var(--ink-3)' }}>(was {item._original.priority})</span>}
+            </div>
+            <button onClick={() => setDetails(!details)} style={{ fontSize: 12, color: 'var(--ink-2)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 500 }}>{details ? <IconChevronD size={12} /> : <IconChevronR size={12} />} Rationale & criteria</button>
+            <div style={{ flex: 1 }}></div>
+            {isRemoved ? <button onClick={onRestore} style={{ fontSize: 12, color: 'var(--teal)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500 }}>Restore</button>
+              : <button onClick={onRm} style={{ fontSize: 12, color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4 }}><IconTrash size={12} /> Remove</button>}
+          </div>
+          {details && !isRemoved && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div>
+                <label className="mono" style={{ display: 'block', fontSize: 11, color: 'var(--ink-3)', textTransform: 'uppercase', marginBottom: 4 }}>Rationale</label>
+                <input value={item.priority_rationale || ''} onChange={e => onUpd('priority_rationale', e.target.value)} placeholder="Clinical rationale…" style={{ ...inputStyle, fontSize: 14, background: 'var(--bg)' }} />
+              </div>
+              <div>
+                <label className="mono" style={{ display: 'block', fontSize: 11, color: 'var(--ink-3)', textTransform: 'uppercase', marginBottom: 4 }}>Criteria source</label>
+                <input value={item.criteria_source || ''} onChange={e => onUpd('criteria_source', e.target.value)} placeholder="e.g. MEWS, Braden Scale" style={{ ...inputStyle, fontSize: 14, background: 'var(--bg)' }} />
+              </div>
+              {item.pattern_detected && <div className="mono" style={{ fontSize: 12, color: 'var(--ink-2)', background: 'var(--amber-bg)', border: '1px solid var(--amber-border)', borderRadius: 6, padding: '6px 8px' }}><span style={{ textTransform: 'uppercase', color: 'var(--amber)' }}>AI Pattern:</span> {item.pattern_detected}</div>}
+            </div>
+          )}
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+            <label className="mono" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--ink-3)', textTransform: 'uppercase', marginBottom: 4 }}><IconMsg size={11} /> Expert comment</label>
+            <textarea value={item._comment || ''} onChange={e => onCmt(e.target.value)} placeholder={action === 'added' ? 'Why add this?' : action === 'removed' ? 'Why remove this?' : 'Optional note…'} rows={1} style={{ ...inputStyle, fontSize: 14, background: 'var(--bg)', resize: 'none', minHeight: 32 }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Stats View
+// ============================================================================
+function StatsView({ cases, client, showToast }) {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { (async () => { setLoading(true); try { setReviews(await client.listReviews() || []); } catch (err) { showToast(`Failed: ${err.message}`, 'error'); } finally { setLoading(false); } })(); }, [cases, client]);
+
+  const exportAll = () => {
+    const data = { exported_at: new Date().toISOString(), cases, reviews };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `fancas_reviews_${new Date().toISOString().split('T')[0]}.json`; a.click();
+    URL.revokeObjectURL(url); showToast(`Exported ${cases.length} cases, ${reviews.length} reviews`, 'success');
+  };
+
+  if (loading) return <div style={{ textAlign: 'center', padding: 64, color: 'var(--ink-3)' }}>Loading…</div>;
+  const tr = reviews.length;
+  const tAi = reviews.reduce((s, r) => s + (r.metrics?.total_ai || 0), 0);
+  const tKept = reviews.reduce((s, r) => s + (r.metrics?.kept || 0), 0);
+  const tMod = reviews.reduce((s, r) => s + (r.metrics?.modified || 0), 0);
+  const tAdd = reviews.reduce((s, r) => s + (r.metrics?.added || 0), 0);
+  const agree = tAi > 0 ? tKept / tAi : 0;
+
+  const cm = {};
+  for (const cat of Object.keys(CATEGORY_NAMES)) cm[cat] = { total: 0, kept: 0, modified: 0, removed: 0, added: 0 };
+  for (const r of reviews) for (const [cat, items] of Object.entries(r.problems_by_category || {})) {
+    const m = cm[cat]; if (!m) continue;
+    for (const p of items) { if (p._action === 'added') m.added++; else m.total++; if (p._action === 'kept') m.kept++; else if (p._action === 'modified') m.modified++; else if (p._action === 'removed') m.removed++; }
+  }
+
+  const pc = [];
+  for (const r of reviews) for (const [cat, chs] of Object.entries(r.overrides_by_category || {})) for (const ch of chs) if (ch.changes?.priority) pc.push({ category: cat, problem: ch.problem_name, from: ch.changes.priority.from, to: ch.changes.priority.to, comment: ch.expert_comment });
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h2 className="serif" style={{ fontSize: 24, fontWeight: 500, marginBottom: 4 }}>Statistics</h2>
+          <p style={{ fontSize: 14, color: 'var(--ink-2)' }}>Aggregate metrics across {tr} reviewed cases.</p>
+        </div>
+        <button onClick={exportAll} disabled={cases.length === 0} style={{ padding: '8px 16px', background: cases.length === 0 ? 'var(--ink-3)' : 'var(--teal-dark)', color: 'white', border: 'none', borderRadius: 8, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}><IconDownload size={14} /> Export all data</button>
+      </div>
+
+      {tr === 0 ? (
+        <div style={{ border: '2px dashed var(--line)', borderRadius: 12, padding: '64px 24px', textAlign: 'center' }}><p style={{ fontSize: 14, color: 'var(--ink-2)' }}>No reviewed cases yet. Statistics appear after the first review.</p></div>
+      ) : (
+        <React.Fragment>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 24 }}>
+            <BigStat label="Overall agreement" value={`${Math.round(agree * 100)}%`} accent="teal" />
+            <BigStat label="AI problems reviewed" value={tAi} />
+            <BigStat label="Modified by expert" value={tMod} accent="amber" />
+            <BigStat label="Added by expert" value={tAdd} accent="violet" />
+          </div>
+          <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
+            <h3 className="serif" style={{ fontSize: 18, fontWeight: 500, marginBottom: 16 }}>Agreement by category</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {Object.entries(CATEGORY_NAMES).map(([cat, name]) => {
+                const m = cm[cat]; const a = m.total > 0 ? m.kept / m.total : null;
+                return (
+                  <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '8px 0' }}>
+                    <div style={{ width: 180, fontSize: 14, flexShrink: 0 }}>{name}</div>
+                    <div style={{ flex: 1, background: 'var(--bg)', borderRadius: 999, height: 8, overflow: 'hidden' }}>{a !== null && <div style={{ height: '100%', background: 'var(--teal)', width: `${a * 100}%` }}></div>}</div>
+                    <div className="mono" style={{ fontSize: 12, color: 'var(--ink-2)', width: 170, textAlign: 'right', flexShrink: 0 }}>
+                      {m.total === 0 ? 'no data' : <React.Fragment>{Math.round(a * 100)}% · {m.kept}/{m.total}{m.modified > 0 && <span style={{ color: 'var(--amber)' }}> · {m.modified}m</span>}{m.removed > 0 && <span style={{ color: 'var(--red)' }}> · {m.removed}r</span>}{m.added > 0 && <span style={{ color: 'var(--violet)' }}> · {m.added}a</span>}</React.Fragment>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {pc.length > 0 && (
+            <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: 24, marginBottom: 24 }}>
+              <h3 className="serif" style={{ fontSize: 18, fontWeight: 500, marginBottom: 4 }}>Priority overrides</h3>
+              <p style={{ fontSize: 14, color: 'var(--ink-2)', marginBottom: 16 }}>Cases where experts changed AI's priority.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {pc.slice(0, 10).map((ch, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
+                    <div className="mono" style={{ fontSize: 11, color: 'var(--ink-3)', textTransform: 'uppercase', width: 120, flexShrink: 0 }}>{CATEGORY_NAMES[ch.category]?.split(' ')[0] || ch.category}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500 }}>{ch.problem}</div>
+                      {ch.comment && <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 2 }}>{ch.comment}</div>}
+                    </div>
+                    <div className="mono" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, flexShrink: 0 }}>
+                      <span style={{ color: PRIORITY_STYLES[ch.from]?.text || 'var(--ink-3)' }}>{ch.from}</span>
+                      <span style={{ color: 'var(--ink-3)' }}>→</span>
+                      <span style={{ color: PRIORITY_STYLES[ch.to]?.text || 'var(--ink-3)' }}>{ch.to}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: 24 }}>
+            <h3 className="serif" style={{ fontSize: 18, fontWeight: 500, marginBottom: 12 }}>Contributing reviewers</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {Array.from(new Set(reviews.map(r => r.reviewer_name))).map(n => <span key={n} style={{ padding: '4px 12px', background: 'var(--bg)', borderRadius: 999, fontSize: 14 }}>{n} <span className="mono" style={{ color: 'var(--ink-3)', fontSize: 12 }}>· {reviews.filter(r => r.reviewer_name === n).length}</span></span>)}
+            </div>
+          </div>
+        </React.Fragment>
+      )}
+    </div>
+  );
+}
+
+function BigStat({ label, value, accent }) {
+  const colors = { teal: 'var(--teal)', amber: 'var(--amber)', violet: 'var(--violet)', default: 'var(--ink)' };
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 12, padding: '16px 20px' }}>
+      <p className="mono" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-3)', marginBottom: 6 }}>{label}</p>
+      <p className="serif" style={{ fontSize: 30, fontWeight: 500, color: colors[accent] || colors.default }}>{value}</p>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
