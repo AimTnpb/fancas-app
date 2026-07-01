@@ -743,26 +743,18 @@
     </div>
   </header>
 
-  <!-- ===== Settings (Dify API config) ===== -->
+  <!-- ===== Settings (optional override) ===== -->
   <div class="settings">
     <button class="settings-toggle" id="settingsToggle">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Dify API Config
+      Settings
     </button>
     <span style="font-size: 12px; color: var(--ink-3); font-family: var(--mono);">
-      Endpoint: <span id="endpointStatus">not set</span>
+      Backend: <span id="endpointStatus" style="color: var(--accent);">/api/dify (secured)</span>
     </span>
     <div class="settings-panel" id="settingsPanel">
-      <div class="settings-field">
-        <label>API Endpoint</label>
-        <input type="text" id="apiEndpoint" placeholder="https://api.dify.ai/v1/workflows/run">
-      </div>
-      <div class="settings-field">
-        <label>API Key</label>
-        <input type="password" id="apiKey" placeholder="app-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
-      </div>
-      <div class="settings-field" style="min-width: 140px; flex: 0 1 160px;">
-        <label>User ID</label>
+      <div class="settings-field" style="min-width: 200px;">
+        <label>User ID (for audit log)</label>
         <input type="text" id="userId" placeholder="nurse-001" value="nurse-001">
       </div>
     </div>
@@ -1215,68 +1207,26 @@ document.getElementById('tabs').addEventListener('click', e => {
 });
 
 // =================== SETTINGS ===================
-const SETTINGS_KEYS = ['apiEndpoint', 'apiKey', 'userId'];
 function loadSettings() {
-  SETTINGS_KEYS.forEach(k => {
-    const v = sessionStorage.getItem(k);  // session only - safer for API keys
-    if (v) document.getElementById(k).value = v;
-  });
-  updateEndpointStatus();
+  const v = sessionStorage.getItem('userId');
+  if (v) document.getElementById('userId').value = v;
 }
 function saveSettings() {
-  SETTINGS_KEYS.forEach(k => {
-    sessionStorage.setItem(k, document.getElementById(k).value);
-  });
-  updateEndpointStatus();
-}
-function updateEndpointStatus() {
-  const ep = document.getElementById('apiEndpoint').value;
-  const status = document.getElementById('endpointStatus');
-  if (ep) {
-    try {
-      const url = new URL(ep);
-      status.textContent = url.host;
-      status.style.color = 'var(--accent)';
-    } catch { status.textContent = 'invalid URL'; status.style.color = 'var(--danger)'; }
-  } else {
-    status.textContent = 'not set';
-    status.style.color = 'var(--ink-3)';
-  }
+  sessionStorage.setItem('userId', document.getElementById('userId').value);
 }
 
 document.getElementById('settingsToggle').addEventListener('click', () => {
   document.getElementById('settingsPanel').classList.toggle('open');
 });
-SETTINGS_KEYS.forEach(k => {
-  document.getElementById(k).addEventListener('input', saveSettings);
-});
+document.getElementById('userId').addEventListener('input', saveSettings);
 
 // =================== SUBMIT ===================
 const submitBtn = document.getElementById('submitBtn');
 const submitText = document.getElementById('submitText');
 
 async function handleSubmit() {
-  const endpoint = document.getElementById('apiEndpoint').value.trim();
-  const apiKey = document.getElementById('apiKey').value.trim();
   const userId = document.getElementById('userId').value.trim() || 'nurse-anonymous';
-  
   const assessment = collectAssessment();
-  
-  if (!endpoint || !apiKey) {
-    openModal(`
-      <div class="alert error">
-        <strong>API Config required.</strong> กรุณาตั้งค่า Endpoint และ API Key ก่อน (กดปุ่ม "Dify API Config" ด้านบน)
-      </div>
-      <div class="alert warn">
-        ดูตัวอย่าง JSON ที่จะถูกส่งด้านล่าง — ใช้สำหรับ test ใน Dify playground ได้
-      </div>
-      <details class="json-preview" open>
-        <summary>Assessment JSON</summary>
-        <pre>${JSON.stringify(assessment, null, 2)}</pre>
-      </details>
-    `);
-    return;
-  }
   
   submitBtn.disabled = true;
   submitText.textContent = 'Sending...';
@@ -1284,10 +1234,10 @@ async function handleSubmit() {
   submitBtn.insertAdjacentHTML('afterbegin', '<span class="spinner"></span>');
   
   try {
-    const res = await fetch(endpoint, {
+    // Call our backend proxy — API key is added server-side
+    const res = await fetch('/api/dify', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -1298,7 +1248,7 @@ async function handleSubmit() {
     });
     
     const result = await res.json();
-    if (!res.ok) throw new Error(result.message || `HTTP ${res.status}`);
+    if (!res.ok) throw new Error(result.message || result.error || `HTTP ${res.status}`);
     
     displayResult(result, assessment);
   } catch (err) {
