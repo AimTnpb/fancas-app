@@ -1391,11 +1391,11 @@ function renderSubsection(category, sub) {
   
   if (sub.type === 'painScore') {
     optionsHtml = `
-      <label class="opt">
+      <label class="opt" title="คลิกซ้ำเพื่อยกเลิกการเลือก">
         <input type="radio" name="${groupName}" value="No (pain score = 0)" data-category="${category}" data-key="${sub.key}">
         <span class="label-text">No pain (score 0)</span>
       </label>
-      <label class="opt">
+      <label class="opt" title="คลิกซ้ำเพื่อยกเลิกการเลือก">
         <input type="radio" name="${groupName}" value="Pain" data-category="${category}" data-key="${sub.key}" id="${groupName}__pain">
         <span class="label-text">Pain — score:</span>
       </label>
@@ -1408,7 +1408,7 @@ function renderSubsection(category, sub) {
       const id = `${groupName}__${i}`;
       const needsNote = (sub.hasNote === opt) || (sub.noteFor && sub.noteFor.includes(opt));
       return `
-        <label class="opt">
+        <label class="opt"${inputType === 'radio' ? ' title="คลิกซ้ำเพื่อยกเลิกการเลือก"' : ''}>
           <input type="${inputType}" name="${groupName}" value="${opt}"
                  data-category="${category}" data-key="${sub.key}" id="${id}">
           <span class="label-text">${opt}</span>
@@ -1673,6 +1673,44 @@ document.getElementById('tabs').addEventListener('click', e => {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   tab.classList.add('active');
   document.getElementById(tab.dataset.target).classList.add('active');
+});
+
+// =================== DESELECTABLE RADIOS ===================
+// Native radios cannot be unset once a group has a selection, but a nurse who
+// mis-taps needs a way back to "not assessed" — which is different from any of
+// the offered answers. We snapshot the checked state before the browser mutates
+// it (mousedown / Space keydown), then clear it on the click that follows.
+let armedRadio = null;
+
+function armRadioFrom(target) {
+  const label = target.closest && target.closest('label.opt');
+  if (!label) { armedRadio = null; return; }
+  const inp = label.querySelector('input[type=radio]');
+  armedRadio = (inp && inp.checked) ? inp : null;
+}
+
+document.addEventListener('mousedown', e => armRadioFrom(e.target));
+
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Spacebar') armRadioFrom(e.target);
+});
+
+document.addEventListener('click', e => {
+  const label = e.target.closest && e.target.closest('label.opt');
+  if (!label) { armedRadio = null; return; }
+
+  const inp = label.querySelector('input[type=radio]');
+  const wasArmed = inp && inp === armedRadio;
+  armedRadio = null;
+  if (!wasArmed) return;
+
+  // Clicking the label (not the circle itself) would otherwise re-check the
+  // input via the label's activation behaviour, so cancel that. Never call
+  // preventDefault when the input IS the target — that restores checked=true.
+  if (e.target !== inp) e.preventDefault();
+
+  inp.checked = false;
+  inp.dispatchEvent(new Event('change', { bubbles: true }));
 });
 
 // =================== SETTINGS ===================
