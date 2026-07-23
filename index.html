@@ -23,6 +23,21 @@
     --warn: #b45309;
     --warn-bg: #fef3c7;
     --danger: #b91c1c;
+
+    /* Priority scale — deliberately far apart in hue so a 10px dot is unambiguous.
+       *-dot  = saturated fill (no text on it)
+       *-text = readable on white / on its own tint
+       *-tint = badge background */
+    --pri-high-dot: #dc2626;
+    --pri-high-text: #b91c1c;
+    --pri-high-tint: #fee2e2;
+    --pri-med-dot: #f5b301;
+    --pri-med-text: #8a6100;
+    --pri-med-strong: #bf8f00;
+    --pri-med-tint: #fdf3cf;
+    --pri-low-dot: #9ca3af;
+    --pri-low-text: #6b7280;
+    --pri-low-tint: #f1f2f4;
     --danger-bg: #fee2e2;
     --success: #15803d;
     --success-bg: #dcfce7;
@@ -753,9 +768,162 @@
     flex-shrink: 0;
     margin-top: 6px;
   }
-  .priority-dot.high { background: var(--danger); }
-  .priority-dot.medium { background: var(--warn); }
-  .priority-dot.low { background: var(--ink-3); }
+  .priority-dot.high { background: var(--pri-high-dot); }
+  .priority-dot.medium { background: var(--pri-med-dot); }
+  .priority-dot.low { background: var(--pri-low-dot); }
+
+  /* ===== Result: view toggle ===== */
+  .view-toggle {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    margin-bottom: 18px;
+  }
+  .view-toggle-btn {
+    border: none;
+    background: none;
+    padding: 6px 16px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-2);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .view-toggle-btn:hover { color: var(--ink); }
+  .view-toggle-btn.active {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  /* ===== Result: priority-ranked list ===== */
+  .pri-group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 22px 0 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .pri-group-header:first-child { margin-top: 0; }
+
+  .pri-group-header .swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .pri-group-header .title {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .pri-group-header .n {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .pri-group-header.high .swatch { background: var(--pri-high-dot); }
+  .pri-group-header.high .title { color: var(--pri-high-text); }
+  .pri-group-header.medium .swatch { background: var(--pri-med-dot); }
+  .pri-group-header.medium .title { color: var(--pri-med-text); }
+  .pri-group-header.low .swatch { background: var(--pri-low-dot); }
+  .pri-group-header.low .title { color: var(--pri-low-text); }
+
+  .p-card {
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line-2);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--card);
+  }
+  .p-card.high { border-left-color: var(--pri-high-dot); }
+  .p-card.medium { border-left-color: var(--pri-med-dot); }
+  .p-card.low { border-left-color: var(--pri-low-dot); }
+
+  .p-rank {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 5px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    min-width: 34px;
+    text-align: center;
+  }
+  .p-card.high .p-rank { background: var(--pri-high-tint); color: var(--pri-high-text); }
+  .p-card.medium .p-rank { background: var(--pri-med-tint); color: var(--pri-med-text); }
+  .p-card.low .p-rank { background: var(--pri-low-tint); color: var(--pri-low-text); }
+
+  .p-body { flex: 1; min-width: 0; }
+
+  .p-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+
+  .p-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .p-chip.high { background: var(--pri-high-tint); color: var(--pri-high-text); }
+  .p-chip.medium { background: var(--pri-med-tint); color: var(--pri-med-text); }
+  .p-chip.low { background: var(--pri-low-tint); color: var(--pri-low-text); }
+
+  .p-cat {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    letter-spacing: 0.04em;
+  }
+
+  .p-evidence {
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+
+  .p-why {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--ink-2);
+    background: var(--bg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border-left: 2px solid var(--line-2);
+  }
+  .p-why summary { cursor: pointer; font-weight: 500; }
+  .p-why > div { margin-top: 6px; line-height: 1.5; }
+
+  .sort-note {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--ink-3);
+    margin: -8px 0 16px;
+    line-height: 1.5;
+  }
 
   .problem-item .content { flex: 1; }
   .problem-item .name {
@@ -1601,24 +1769,97 @@ function displayResult(apiResult, assessment) {
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   }[c]));
   
+  // ---- Flatten every category into one ranked list ----
+  // Display order within the same priority level: syndrome-driven problems first,
+  // then airway -> circulation -> neuro -> the rest. This is presentation order only;
+  // the authoritative level is the badge on each card.
+  const PRI_RANK = { high: 0, medium: 1, low: 2 };
+  const CLINICAL_ORDER = {
+    aeration: 0, fluid_electrolyte: 1, stimulation: 2,
+    nutrition: 3, activity_psychology: 4, communication: 5
+  };
+  const normPri = v => {
+    const x = String(v || '').toLowerCase().trim();
+    if (x === 'critical' || x === 'urgent' || x === 'high') return 'high';
+    if (x === 'low') return 'low';
+    return 'medium';
+  };
+
+  const flat = [];
+  Object.keys(categoryNames).forEach(cat => {
+    (problemList[cat] || []).forEach((item, i) => {
+      flat.push(Object.assign({}, item, {
+        _cat: cat,
+        _pri: normPri(item.priority),
+        _seq: i
+      }));
+    });
+  });
+
+  flat.sort((a, b) =>
+    PRI_RANK[a._pri] - PRI_RANK[b._pri] ||
+    (a.pattern_detected ? 0 : 1) - (b.pattern_detected ? 0 : 1) ||
+    (CLINICAL_ORDER[a._cat] ?? 9) - (CLINICAL_ORDER[b._cat] ?? 9) ||
+    a._seq - b._seq
+  );
+  flat.forEach((it, i) => { it._rank = i + 1; });
+
+  // Counts are derived from what is actually rendered, so the header can never
+  // disagree with the list below it.
+  const counts = { high: 0, medium: 0, low: 0 };
+  flat.forEach(it => { counts[it._pri]++; });
+
+  // ---- Shared card renderer ----
+  const priLabel = { high: 'High', medium: 'Medium', low: 'Low' };
+  function problemCard(item, showRank) {
+    const pri = item._pri;
+    const src = sourceLabels[item.priority_source] || sourceLabels.default;
+    const rationale = item.priority_rationale || '';
+    const criteria = item.criteria_source || '';
+    const baseline = item.priority_baseline;
+    const pattern = item.pattern_detected;
+    return `<div class="p-card ${pri}">
+      ${showRank ? `<div class="p-rank">P${item._rank}</div>` : `<div class="p-rank">&bull;</div>`}
+      <div class="p-body">
+        <div class="p-title">
+          <span>${escapeHtml(item.problem)}</span>
+          <span class="p-chip ${pri}">${priLabel[pri]}</span>
+          ${showRank ? `<span class="p-cat">${escapeHtml(categoryNames[item._cat] || item._cat)}</span>` : ''}
+          <span style="padding:2px 8px;font-size:10px;font-weight:600;color:${src.color};background:${src.bg};border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;font-family:var(--mono);">${src.icon} ${src.label}</span>
+          ${baseline ? `<span style="font-size:11px;color:var(--ink-3);font-family:var(--mono);">(was ${escapeHtml(baseline)})</span>` : ''}
+        </div>
+        <div class="p-evidence">${escapeHtml(item.evidence)}</div>
+        ${(rationale || criteria) ? `
+          <details class="p-why" style="border-left-color:${src.color};">
+            <summary>Why ${escapeHtml(priLabel[pri].toLowerCase())} priority?</summary>
+            <div>
+              ${rationale ? `<div><strong>Rationale:</strong> ${escapeHtml(rationale)}</div>` : ''}
+              ${criteria ? `<div style="margin-top:4px;"><strong>Criteria:</strong> ${escapeHtml(criteria)}</div>` : ''}
+              ${pattern ? `<div style="margin-top:4px;"><strong>Pattern:</strong> ${escapeHtml(pattern)}</div>` : ''}
+            </div>
+          </details>` : ''}
+      </div>
+    </div>`;
+  }
+
   // Top summary cards (4 stats now)
   let html = `
     <div class="result-summary">
       <div class="result-stat">
         <div class="label">Total</div>
-        <div class="value">${summary.total_problems ?? '—'}</div>
+        <div class="value">${flat.length}</div>
       </div>
       <div class="result-stat">
         <div class="label">High</div>
-        <div class="value high">${summary.high_priority_count ?? '—'}</div>
+        <div class="value" style="color:var(--pri-high-text)">${counts.high}</div>
       </div>
       <div class="result-stat">
         <div class="label">Medium</div>
-        <div class="value" style="color:var(--warn)">${summary.medium_priority_count ?? '—'}</div>
+        <div class="value" style="color:var(--pri-med-strong)">${counts.medium}</div>
       </div>
       <div class="result-stat">
         <div class="label">Low</div>
-        <div class="value" style="color:var(--ink-3)">${summary.low_priority_count ?? '—'}</div>
+        <div class="value" style="color:var(--pri-low-text)">${counts.low}</div>
       </div>
     </div>
   `;
@@ -1643,54 +1884,41 @@ function displayResult(apiResult, assessment) {
     </div>`;
   }
   
-  // Problem list by category
-  Object.entries(categoryNames).forEach(([key, name]) => {
-    const items = problemList[key] || [];
-    if (items.length === 0) return;
-    
-    html += `<div class="result-category">
-      <div class="result-category-header">${name} <span style="font-family:var(--mono);font-size:11px;color:var(--ink-3);font-weight:400;">(${items.length})</span></div>`;
-    
-    items.forEach(item => {
-      const pri = item.priority || 'medium';
-      const src = sourceLabels[item.priority_source] || sourceLabels.default;
-      const rationale = item.priority_rationale || '';
-      const criteria = item.criteria_source || '';
-      const baseline = item.priority_baseline;
-      const pattern = item.pattern_detected;
-      
-      html += `<div class="problem-item" style="flex-direction:column;align-items:stretch;gap:10px;">
-        <div style="display:flex;align-items:flex-start;gap:12px;">
-          <div class="priority-dot ${pri}"></div>
-          <div class="content">
-            <div class="name">
-              ${escapeHtml(item.problem)}
-              <span style="display:inline-block;margin-left:8px;padding:2px 8px;font-size:10px;font-weight:600;color:${src.color};background:${src.bg};border-radius:999px;text-transform:uppercase;letter-spacing:0.05em;font-family:var(--mono);">
-                ${src.icon} ${src.label}
-              </span>
-              ${baseline ? `<span style="font-size:11px;color:var(--ink-3);font-family:var(--mono);margin-left:6px;">(was ${escapeHtml(baseline)})</span>` : ''}
-            </div>
-            <div class="evidence">${escapeHtml(item.evidence)}</div>
-          </div>
-        </div>
-        ${rationale || criteria ? `
-          <details style="margin-left:20px;font-size:12px;color:var(--ink-2);background:var(--bg);padding:8px 12px;border-radius:6px;border-left:2px solid ${src.color};">
-            <summary style="cursor:pointer;font-weight:500;color:var(--ink-2);">Why ${escapeHtml(pri)} priority?</summary>
-            <div style="margin-top:6px;line-height:1.5;">
-              ${rationale ? `<div><strong>Rationale:</strong> ${escapeHtml(rationale)}</div>` : ''}
-              ${criteria ? `<div style="margin-top:4px;"><strong>Criteria:</strong> ${escapeHtml(criteria)}</div>` : ''}
-              ${pattern ? `<div style="margin-top:4px;"><strong>Pattern:</strong> ${escapeHtml(pattern)}</div>` : ''}
-            </div>
-          </details>
-        ` : ''}
-      </div>`;
-    });
-    
-    html += `</div>`;
-  });
-  
-  if (Object.keys(problemList).length === 0) {
+  // ---- Two views: ranked by priority (default) / grouped by FANCAS ----
+  if (flat.length === 0) {
     html += `<div class="alert warn">No problem list returned. Raw response below:</div>`;
+  } else {
+    html += `<div class="view-toggle">
+      <button class="view-toggle-btn active" data-view="priority">By priority</button>
+      <button class="view-toggle-btn" data-view="fancas">By FANCAS</button>
+    </div>`;
+
+    // --- View A: ranked ---
+    let vp = `<div class="sort-note">เรียง P1 &rarr; P${flat.length} ตามระดับความสำคัญ &middot; ภายในระดับเดียวกันเรียง syndrome &rarr; หายใจ &rarr; ไหลเวียน &rarr; ระบบประสาท</div>`;
+    ['high', 'medium', 'low'].forEach(level => {
+      const items = flat.filter(it => it._pri === level);
+      if (items.length === 0) return;
+      const first = items[0]._rank, last = items[items.length - 1]._rank;
+      vp += `<div class="pri-group-header ${level}">
+        <span class="swatch"></span>
+        <span class="title">${priLabel[level]} priority</span>
+        <span class="n">${items.length} รายการ &middot; P${first}${first !== last ? '–P' + last : ''}</span>
+      </div>`;
+      items.forEach(it => { vp += problemCard(it, true); });
+    });
+    html += `<div id="view-priority">${vp}</div>`;
+
+    // --- View B: original FANCAS grouping ---
+    let vf = '';
+    Object.entries(categoryNames).forEach(([key, name]) => {
+      const items = flat.filter(it => it._cat === key);
+      if (items.length === 0) return;
+      vf += `<div class="result-category">
+        <div class="result-category-header">${name} <span style="font-family:var(--mono);font-size:11px;color:var(--ink-3);font-weight:400;">(${items.length})</span></div>`;
+      items.forEach(it => { vf += problemCard(it, false); });
+      vf += `</div>`;
+    });
+    html += `<div id="view-fancas" hidden>${vf}</div>`;
   }
   
   // Audit log section
@@ -1749,6 +1977,18 @@ function displayResult(apiResult, assessment) {
   
   openModal(html);
 }
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.view-toggle-btn');
+  if (!btn) return;
+  const view = btn.dataset.view;
+  btn.parentElement.querySelectorAll('.view-toggle-btn')
+     .forEach(b => b.classList.toggle('active', b === btn));
+  const pv = document.getElementById('view-priority');
+  const fv = document.getElementById('view-fancas');
+  if (pv) pv.hidden = (view !== 'priority');
+  if (fv) fv.hidden = (view !== 'fancas');
+});
 
 function openModal(html) {
   document.getElementById('modalBody').innerHTML = html;
