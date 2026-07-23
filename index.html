@@ -223,6 +223,114 @@
     border-bottom-color: var(--accent);
   }
 
+  /* ===== Vital Signs ===== */
+  .vitals {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 24px 20px;
+    margin: 0 0 28px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .vitals-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .vitals-head h2 {
+    font-family: var(--serif);
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .vitals-status {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--ink-3);
+  }
+  .vitals-status.ok { color: var(--success); }
+  .vitals-status.partial { color: var(--warn); }
+
+  .vitals-grid {
+    display: grid;
+    grid-template-columns: 1.5fr repeat(4, 1fr);
+    gap: 14px;
+  }
+
+  .vital label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+  }
+
+  .vital label .unit {
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    opacity: 0.75;
+  }
+
+  .vital input {
+    width: 100%;
+    padding: 8px 0;
+    font-family: var(--mono);
+    font-size: 17px;
+    font-weight: 500;
+    border: none;
+    border-bottom: 1px solid var(--line-2);
+    background: transparent;
+    color: var(--ink);
+    transition: border-color 0.15s, color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .vital input::-webkit-outer-spin-button,
+  .vital input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .vital input:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+  }
+
+  .vital.flag-warn input { color: var(--warn); border-bottom-color: var(--warn); }
+  .vital.flag-danger input { color: var(--danger); border-bottom-color: var(--danger); }
+
+  .bp-pair {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bp-pair .bp-sep {
+    font-family: var(--mono);
+    font-size: 17px;
+    color: var(--ink-3);
+    flex-shrink: 0;
+  }
+
+  .vital-flag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    margin-top: 5px;
+    min-height: 14px;
+    color: transparent;
+  }
+  .vital.flag-warn .vital-flag { color: var(--warn); }
+  .vital.flag-danger .vital-flag { color: var(--danger); }
+
   /* ===== Tab Navigation ===== */
   .tabs {
     display: flex;
@@ -723,6 +831,9 @@
     .tab .letter { font-size: 16px; }
     .tab .name { display: none; }
     .panel { padding: 20px 18px; }
+    .vitals { padding: 16px 18px 18px; }
+    .vitals-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .vital.vital-bp { grid-column: 1 / -1; }
     .options { grid-template-columns: 1fr; }
     .actionbar { padding: 6px 6px 6px 16px; gap: 10px; }
     .submit-btn { padding: 10px 18px; font-size: 13px; }
@@ -777,6 +888,45 @@
     <div class="info-field">
       <label>Nurse (by RN)</label>
       <input type="text" id="nurseName" placeholder="พยาบาล...">
+    </div>
+  </div>
+
+  <!-- ===== Vital Signs ===== -->
+  <div class="vitals">
+    <div class="vitals-head">
+      <h2>Vital Signs</h2>
+      <span class="vitals-status" id="vitalsStatus">ยังไม่ได้บันทึก</span>
+    </div>
+    <div class="vitals-grid">
+      <div class="vital vital-bp" id="vital-bp">
+        <label>BP <span class="unit">mmHg</span></label>
+        <div class="bp-pair">
+          <input type="number" id="vsSystolic" placeholder="120" min="40" max="300" step="1" inputmode="numeric" aria-label="Systolic blood pressure">
+          <span class="bp-sep">/</span>
+          <input type="number" id="vsDiastolic" placeholder="80" min="20" max="200" step="1" inputmode="numeric" aria-label="Diastolic blood pressure">
+        </div>
+        <div class="vital-flag" id="flag-bp">&nbsp;</div>
+      </div>
+      <div class="vital" id="vital-pulse">
+        <label>P <span class="unit">bpm</span></label>
+        <input type="number" id="vsPulse" placeholder="80" min="20" max="250" step="1" inputmode="numeric" aria-label="Pulse rate">
+        <div class="vital-flag" id="flag-pulse">&nbsp;</div>
+      </div>
+      <div class="vital" id="vital-rr">
+        <label>RR <span class="unit">/min</span></label>
+        <input type="number" id="vsRespiration" placeholder="18" min="4" max="80" step="1" inputmode="numeric" aria-label="Respiratory rate">
+        <div class="vital-flag" id="flag-rr">&nbsp;</div>
+      </div>
+      <div class="vital" id="vital-temp">
+        <label>T <span class="unit">&deg;C</span></label>
+        <input type="number" id="vsTemperature" placeholder="37.0" min="30" max="43" step="0.1" inputmode="decimal" aria-label="Body temperature">
+        <div class="vital-flag" id="flag-temp">&nbsp;</div>
+      </div>
+      <div class="vital" id="vital-spo2">
+        <label>SpO&#8322; <span class="unit">%</span></label>
+        <input type="number" id="vsSpo2" placeholder="98" min="50" max="100" step="1" inputmode="numeric" aria-label="Oxygen saturation">
+        <div class="vital-flag" id="flag-spo2">&nbsp;</div>
+      </div>
     </div>
   </div>
 
@@ -1133,12 +1283,163 @@ function renderForm() {
 }
 
 // =================== STATE / COLLECT ===================
+// =================== VITAL SIGNS ===================
+// Thresholds follow qSOFA / SIRS-style screening cut-offs.
+// These only FLAG values for the downstream reasoner — no diagnosis is made here.
+const VITAL_FIELDS = [
+  { key: 'bp_systolic',     el: 'vsSystolic',     group: 'bp',    label: 'BP',    plausible: [40, 300] },
+  { key: 'bp_diastolic',    el: 'vsDiastolic',    group: 'bp',    label: 'BP',    plausible: [20, 200] },
+  { key: 'pulse_bpm',       el: 'vsPulse',        group: 'pulse', label: 'P',     plausible: [20, 250] },
+  { key: 'respiration_bpm', el: 'vsRespiration',  group: 'rr',    label: 'RR',    plausible: [4, 80] },
+  { key: 'temperature_c',   el: 'vsTemperature',  group: 'temp',  label: 'T',     plausible: [30, 43], decimal: true },
+  { key: 'spo2_percent',    el: 'vsSpo2',         group: 'spo2',  label: 'SpO2',  plausible: [50, 100] }
+];
+
+function readVitals() {
+  const v = {};
+  VITAL_FIELDS.forEach(f => {
+    const raw = document.getElementById(f.el).value.trim();
+    if (raw === '') { v[f.key] = null; return; }
+    const n = f.decimal ? parseFloat(raw) : parseInt(raw, 10);
+    v[f.key] = Number.isFinite(n) ? n : null;
+  });
+  return v;
+}
+
+// Returns { flags:[], perGroup:{group:{level,text}}, implausible:[] }
+function evaluateVitals(v) {
+  const flags = [];
+  const perGroup = {};
+  const implausible = [];
+
+  const set = (group, level, text, flag) => {
+    const rank = { warn: 1, danger: 2 };
+    if (!perGroup[group] || rank[level] > rank[perGroup[group].level]) {
+      perGroup[group] = { level, text };
+    }
+    if (flag && !flags.includes(flag)) flags.push(flag);
+  };
+
+  VITAL_FIELDS.forEach(f => {
+    const val = v[f.key];
+    if (val === null) return;
+    if (val < f.plausible[0] || val > f.plausible[1]) {
+      implausible.push(f.key);
+      set(f.group, 'danger', 'ตรวจสอบค่า', null);
+    }
+  });
+
+  const sbp = v.bp_systolic, dbp = v.bp_diastolic;
+  if (sbp !== null) {
+    if (sbp < 90) set('bp', 'danger', 'hypotension', 'hypotension');
+    else if (sbp <= 100) set('bp', 'warn', 'SBP ≤ 100 (qSOFA)', 'sbp_le_100');
+    else if (sbp >= 180) set('bp', 'warn', 'hypertension', 'hypertension');
+  }
+  if (dbp !== null && dbp >= 110) set('bp', 'warn', 'hypertension', 'hypertension');
+
+  const map = (sbp !== null && dbp !== null) ? (sbp + 2 * dbp) / 3 : null;
+  if (map !== null && map < 65) set('bp', 'danger', 'MAP < 65', 'map_below_65');
+
+  if (v.pulse_bpm !== null) {
+    if (v.pulse_bpm > 130) set('pulse', 'danger', 'tachycardia', 'tachycardia');
+    else if (v.pulse_bpm > 100) set('pulse', 'warn', 'tachycardia', 'tachycardia');
+    else if (v.pulse_bpm < 50) set('pulse', 'warn', 'bradycardia', 'bradycardia');
+  }
+
+  if (v.respiration_bpm !== null) {
+    if (v.respiration_bpm >= 30) set('rr', 'danger', 'tachypnea', 'tachypnea');
+    else if (v.respiration_bpm >= 22) set('rr', 'warn', 'tachypnea (qSOFA)', 'tachypnea');
+    else if (v.respiration_bpm < 12) set('rr', 'warn', 'bradypnea', 'bradypnea');
+  }
+
+  if (v.temperature_c !== null) {
+    if (v.temperature_c >= 38.0) set('temp', 'warn', 'fever', 'fever');
+    else if (v.temperature_c < 36.0) set('temp', 'warn', 'hypothermia', 'hypothermia');
+  }
+
+  if (v.spo2_percent !== null) {
+    if (v.spo2_percent < 90) set('spo2', 'danger', 'hypoxemia', 'hypoxemia');
+    else if (v.spo2_percent < 94) set('spo2', 'warn', 'low SpO₂', 'hypoxemia');
+  }
+
+  return { flags, perGroup, implausible, map };
+}
+
+function vitalsSummaryText(v, map) {
+  const parts = [];
+  if (v.bp_systolic !== null && v.bp_diastolic !== null) {
+    parts.push('BP ' + v.bp_systolic + '/' + v.bp_diastolic + ' mmHg' +
+               (map !== null ? ' (MAP ' + Math.round(map) + ')' : ''));
+  } else if (v.bp_systolic !== null) {
+    parts.push('SBP ' + v.bp_systolic + ' mmHg');
+  }
+  if (v.pulse_bpm !== null) parts.push('P ' + v.pulse_bpm + ' bpm');
+  if (v.respiration_bpm !== null) parts.push('RR ' + v.respiration_bpm + '/min');
+  if (v.temperature_c !== null) parts.push('T ' + v.temperature_c + '°C');
+  if (v.spo2_percent !== null) parts.push('SpO2 ' + v.spo2_percent + '%');
+  return parts.join(', ');
+}
+
+function collectVitals() {
+  const v = readVitals();
+  const ev = evaluateVitals(v);
+  const missing = VITAL_FIELDS.filter(f => v[f.key] === null).map(f => f.key);
+  return Object.assign({}, v, {
+    bp_mmhg: (v.bp_systolic !== null && v.bp_diastolic !== null)
+      ? v.bp_systolic + '/' + v.bp_diastolic : null,
+    map_mmhg: ev.map !== null ? Math.round(ev.map * 10) / 10 : null,
+    recorded: missing.length < VITAL_FIELDS.length,
+    missing: missing,
+    implausible: ev.implausible,
+    abnormal_flags: ev.flags,
+    summary_text: vitalsSummaryText(v, ev.map)
+  });
+}
+
+function renderVitals() {
+  const v = readVitals();
+  const ev = evaluateVitals(v);
+
+  ['bp', 'pulse', 'rr', 'temp', 'spo2'].forEach(g => {
+    const box = document.getElementById('vital-' + g);
+    const flagEl = document.getElementById('flag-' + g);
+    box.classList.remove('flag-warn', 'flag-danger');
+    const hit = ev.perGroup[g];
+    if (hit) {
+      box.classList.add('flag-' + hit.level);
+      flagEl.textContent = hit.text;
+    } else {
+      flagEl.innerHTML = '&nbsp;';
+    }
+  });
+
+  const missing = VITAL_FIELDS.filter(f => v[f.key] === null);
+  const status = document.getElementById('vitalsStatus');
+  if (missing.length === 0) {
+    status.textContent = 'บันทึกครบ';
+    status.className = 'vitals-status ok';
+  } else if (missing.length === VITAL_FIELDS.length) {
+    status.textContent = 'ยังไม่ได้บันทึก';
+    status.className = 'vitals-status';
+  } else {
+    const names = [];
+    missing.forEach(f => { if (!names.includes(f.label)) names.push(f.label); });
+    status.textContent = 'ขาด: ' + names.join(', ');
+    status.className = 'vitals-status partial';
+  }
+}
+
+VITAL_FIELDS.forEach(f => {
+  document.getElementById(f.el).addEventListener('input', renderVitals);
+});
+
 function collectAssessment() {
   const data = {
     patient_id: document.getElementById('patientId').value || '',
     shift_date: document.getElementById('shiftDate').value || '',
     assessment_time: document.getElementById('assessmentTime').value || '',
-    nurse: document.getElementById('nurseName').value || ''
+    nurse: document.getElementById('nurseName').value || '',
+    vital_signs: collectVitals()
   };
   
   Object.keys(FORM_CONFIG).forEach(cat => { data[cat] = {}; });
@@ -1465,6 +1766,7 @@ document.getElementById('modalBackdrop').addEventListener('click', e => {
 
 // =================== INIT ===================
 renderForm();
+renderVitals();
 document.addEventListener('change', countSelections);
 loadSettings();
 
